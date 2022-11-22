@@ -22,4 +22,4 @@ TODO
 <!-- Instruct the user how to create a bot/link a guide to create a bot, then tell them to copy the config.example.json file and rename it to config.json -->
 # License
 
-This project is licensed under the Apache 2.0 License. [Click here to read it](/LICENSE)
+This project uses code from [Hibiki](https://github.com/sysdotini/hibiki), which uses the [zlib license](/LICENSE), therefore this project is licensed under the zlib license.
