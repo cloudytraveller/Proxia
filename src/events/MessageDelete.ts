@@ -11,14 +11,13 @@ export class ProxiaMessageDeleteEvent extends ProxiaEvent {
   }
 
   private async _deleteMessage(message: Message | PartialMessage) {
-    if (message.author?.bot) return;
+    if (!message.webhookId) return;
 
     // There's probably some other checks we have to do here.
 
-    // console.log("Deleted message " + message.id + ": " + message.content.substr(0, length).trim() + (message.content.length < length ? "" : "..."));
-
+    const fetchedMessage = await message.fetch();
     try {
-      this.bot.db.deleteMessage(message.id, message.channelId, message.guildId);
+      this.bot.db.deleteMessage(fetchedMessage.id, fetchedMessage.channelId, fetchedMessage.guildId as string);
     } catch {
       // do nothing
     }

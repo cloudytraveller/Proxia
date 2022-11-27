@@ -1,11 +1,18 @@
+/* eslint-disable unicorn/no-null */
 /* eslint-disable @typescript-eslint/naming-convention */
+
+// Typings in these functions will be scattered and casted, except return types.
+
+// import type { Role, Guild, Message, Attachment, Webhook } from "knex/types/tables";
+import { logger } from "utils/logger.js";
+import {  SnowflakeUtil } from "discord.js";
 import Knex from "knex";
 
 export class DatabaseManager {
   client: Knex.Knex;
 
   /**
-   * Creates a new Proxia database manaer
+   * Creates a new Proxia database
    */
 
   constructor() {
@@ -17,7 +24,7 @@ export class DatabaseManager {
     });
   }
 
-  public async initSchema() {
+  public async initSchema(): Promise<void> {
     // Oh god just kill me already
     if (!(await this.client.schema.hasTable("guilds"))) {
       await this.client.schema.createTable("guilds", (k) => {
@@ -101,14 +108,162 @@ export class DatabaseManager {
       await this.client.schema.createTable("guilds", (k) => {
         k.text("id");
         k.text("owner_id");
+        k.text("ignored_channels").defaultTo("[]");
+        k.integer("disabled").defaultTo(false);
+        k.boolean("hide_ghost_mentions").defaultTo(false);
       });
     }
   }
 
+  /* BEGIN ROLES SECTION */
   // Mark message as deleted
-  public async deleteMessage(id: string, channel_id: string, guild_id: string) {
+
+  public async addRole(role: Omit<Role, "existent">): Promise<void> {
+    await this.client<Role>("roles").insert({
+      ...role,
+      existent: true,
+    });
+  }
+
+  public async roleExists(id: string, guild_id: string): Promise<boolean> {
+    const result = await this.client<Role>("roles")
+      .select("*")
+      .where({
+        id,
+        guild_id,
+      })
+      .first();
+
+    return !!result;
+  }
+
+  public async deleteRole(roleId: string, guildId: string): Promise<void> {
+    if (await this.roleExists(roleId, guildId)) {
+      return;
+    }
+
+    await this.client<Role>("roles")
+      .where({
+        id: roleId,
+        guild_id: guildId,
+      })
+      .update("existent", false);
+  }
+
+  public async getRole(id: string, guild_id: string): Promise<Role | undefined> {
+    const role = await this.client<Role>("roles")
+      .select("*")
+      .where({
+        id,
+        guild_id,
+      })
+      .first();
+
+    return role;
+  }
+
+  /* END ROLES SECTION */
+
+  /* BEGIN GUILD SECTION */
+
+  public async guildExists(guild_id: string): Promise<boolean> {
+    const result = await this.client<Guild>("guilds")
+      .select("id")
+      .where({
+        id: guild_id,
+      })
+      .first();
+
+    return !!result;
+  }
+
+  public async getGuild(guild_id: string): Promise<Guild | null> {
+    const result = await this.client<Guild>("guilds").select().where("id", guild_id).first();
+
+    if (!result) return null;
+
+    return result;
+  }
+
+  public async addGuild(guild: Guild): Promise<void> {
+    await this.client<Guild>("guilds").insert(guild);
+  }
+
+  public async updateGuild(guild_id: string, guild: Partial<Guild>): Promise<void> {
+    await this.client<Guild>("guilds").update(guild).where("id", guild_id);
+  }
+
+  public async addIgnoredChannel(guild_id: string, ...args: string[]): Promise<string[] | null> {
+    const ignoredChannels = await this.getIgnoredChannels(guild_id);
+
+    if (!ignoredChannels) {
+      return null;
+    }
+
+    for (const id of args) {
+      try {
+        SnowflakeUtil.decode(id);
+      } catch {
+        throw new Error("Invalid snowflake");
+      }
+    }
+
+    ignoredChannels.push(...args);
+
+    await this.client<Guild>("guilds").where("id", guild_id).update("ignored_channels", JSON.stringify(ignoredChannels)).first();
+
+    return [...ignoredChannels];
+  }
+
+  public async getIgnoredChannels(guild_id: string): Promise<string[] | null> {
+    const result = await this.client<Guild>("guilds").select("ignored_channels", "id").where("id", guild_id).first();
+
+    if (result == null) return null;
+
+    try {
+      return JSON.parse(result.ignored_channels || ";fdmln");
+    } catch {
+      logger.error(`ignored_channels for ${result.id} was corrupted!`);
+      return [];
+    }
+  }
+
+  /* END GUILD SECTION */
+
+  /* BEGIN MESSAGE SECTION */
+  // I'm not entirely sure why I'm creating two functions that do the same thing.
+  // I just don't want to select a full message object for `messageExists`
+  public async getMessage(message_id: string, guild_id: string, channel_id?: string): Promise<Message | undefined> {
+    // You're pissin' me off, Gordon.
+
+    const result = await this.client<Message>("messages")
+      .select()
+      .where({
+        id: message_id,
+        guild_id,
+        channel_id: channel_id == null ? undefined : channel_id,
+      })
+      .first();
+
+    return result;
+  }
+
+  public async messageExists(message_id: string, guild_id: string, channel_id?: string): Promise<boolean> {
+    const result = await this.client<Message>("messages")
+      .select("id")
+      .where({
+        id: message_id,
+        guild_id,
+        channel_id: channel_id == null ? undefined : channel_id,
+      })
+      .first();
+
+    return !!result;
+  }
+
+  public async deleteMessage(id: string, channel_id: string, guild_id: string): Promise<void> {
     // eh fuck.
-    this.client<Database.Message>("messages")
+    this.client<Message>("messages")
       .where({
         id,
         channel_id,
@@ -120,40 +275,61 @@ export class DatabaseManager {
       });
   }
 
-  public async roleExists(id: string, guild_id: string) {
-    const result = await this.client<Database.Role>("roles")
-      .select("*")
-      .where({
-        id,
-        guild_id,
-      })
-      .first();
+  public async addMessage(message: Message): Promise<Message> {
+    const baseMessage: Message = {
+      id: "",
+      user_id: "",
+      guild_id: "",
+      channel_id: "",
+      content: "",
+      avatar_url: "",
+      webhook_id: "",
+      createdTimestamp: 0,
+      attachments: [],
+      deleted: false,
+      edits: [],
+      reply: {},
+    };
 
-    return !!result;
-  }
+    const newMessage: Record<any, any> = {};
+    Object.assign(baseMessage, message);
 
-  public async deleteRole(roleId: string, guildId: string) {
-    if (await this.roleExists(roleId, guildId)) {
-      return;
+    for (const object in baseMessage) {
+      newMessage[object] = JSON.parse((baseMessage as unknown as Record<any, any>)[object]);
     }
 
-    await this.client<Database.Role>("roles")
-      .where({
-        id: roleId,
-        guild_id: guildId,
-      })
-      .update("existent", false);
+    await this.client("messages").insert(baseMessage);
+    return baseMessage;
   }
 
-  public async getRole(id: string, guild_id: string) {
-    const role = await this.client<Database.Role>("roles")
-      .select("*")
+  public async addMessageEdit({
+    message_id,
+    guild_id,
+    channel_id,
+    new_content,
+    edit_epoch,
+  }: {
+    message_id: string;
+    guild_id: string;
+    channel_id?: string;
+    new_content: string;
+    edit_epoch: number;
+  }): Promise<void> {
+    if (!(await this.messageExists(message_id, guild_id, channel_id))) throw new Error("Message does not exist");
+
+    const dbResult = (await this.client<Message>("messages")
+      .select("edits")
       .where({
-        id,
+        id: message_id,
         guild_id,
+        channel_id: channel_id == null ? undefined : channel_id,
       })
-      .first();
+      .first()) as unknown as { edits: string };
 
-    return role;
+    const messageEdits = JSON.parse(dbResult.edits) as Message["edits"];
+
+    messageEdits.push({ content: new_content, date: edit_epoch });
   }
+
+  /* END MESSAGE SECTION */
 }

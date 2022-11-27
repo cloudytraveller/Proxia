@@ -1,5 +1,5 @@
 import { ProxiaEvent } from "classes/Event.js";
-import { ChannelType, Message, MessageReaction } from "discord.js";
+import type { ChannelType, Message, MessageReaction } from "discord.js";
 
 export class ProxiaMessageReactionAddEvent extends ProxiaEvent {
   events: ProxiaEventEmitter[] = ["messageReactionAdd"];
