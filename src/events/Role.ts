@@ -10,12 +10,12 @@ export class ProxiaRoleEvent extends ProxiaEvent {
   public async run(_event: ProxiaEventEmitter, role: DiscordRole, role2?: DiscordRole) {
     switch (_event) {
       case "roleCreate": {
-        this._addRole(role);
+        this.addRole(role);
 
         break;
       }
       case "roleDelete": {
-        this._deleteRole(role);
+        this.deleteRole(role);
 
         break;
       }
@@ -29,7 +29,7 @@ export class ProxiaRoleEvent extends ProxiaEvent {
     }
   }
 
-  private async _addRole(role: DiscordRole) {
+  public async addRole(role: DiscordRole) {
     // TODO: Check if bot has role management permissions??
 
     if (await this.bot.db.roleExists(role.id, role.guild.id)) {
@@ -57,7 +57,7 @@ export class ProxiaRoleEvent extends ProxiaEvent {
     return;
   }
 
-  private async _deleteRole(role: DiscordRole) {
+  public async deleteRole(role: DiscordRole) {
     await this.bot.db.deleteRole(role.id, role.guild.id);
   }
 
@@ -71,12 +71,12 @@ export class ProxiaRoleEvent extends ProxiaEvent {
     )
       return;
 
-    if (oldRole.name === newRole.name) return;
+    if (oldRole.name === newRole.name || (!oldRole && newRole)) return;
 
     const dbRole = await this.bot.db.getRole(oldRole.id, oldRole.guild.id);
 
     if (dbRole === null) {
-      await this._addRole(newRole);
+      await this.addRole(newRole);
       return;
     }
   }

@@ -88,6 +88,7 @@ interface Guild {
   id: string;
   owner_id: string;
   ignored_channels: string;
+  ghost_hide_mentions: boolean;
 }
 
 interface oauth2_token {

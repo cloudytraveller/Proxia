@@ -222,3 +222,6 @@ Temporary Items
 
 # Static generated files
 src/web/public/**
+
+# E
+oldindex.ts

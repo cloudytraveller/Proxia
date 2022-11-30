@@ -11,3 +11,5 @@ type DiscordSnowflake = PrivateSnowflake;
 
 // A resolvable string of intents
 type ResolvableIntentString = import("discord.js").GatewayIntentsString;
+
+type Unpacked<T> = T extends (infer U)[] ? U : T;

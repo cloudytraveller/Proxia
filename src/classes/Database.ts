@@ -5,7 +5,7 @@
 
 // import type { Role, Guild, Message, Attachment, Webhook } from "knex/types/tables";
 import { logger } from "utils/logger.js";
-import {  SnowflakeUtil } from "discord.js";
+import { SnowflakeUtil } from "discord.js";
 import Knex from "knex";
 
 export class DatabaseManager {
@@ -162,6 +162,18 @@ export class DatabaseManager {
     return role;
   }
 
+  public async getRoleByUniqueId(unique_id: string) {
+    const role = await this.client<Role>("roles").select("*").where({ unique_id });
+    return role;
+  }
+
+  public async getUniqueRoleIds(guild_id: string) {
+    const roles = await this.client<Role>("roles").select("unique_id").where({ guild_id });
+    const roleIds = roles.map((r) => r.unique_id);
+
+    return roleIds;
+  }
+
   /* END ROLES SECTION */
 
   /* BEGIN GUILD SECTION */
@@ -180,9 +192,7 @@ export class DatabaseManager {
   public async getGuild(guild_id: string): Promise<Guild | null> {
     const result = await this.client<Guild>("guilds").select().where("id", guild_id).first();
 
-    if (!result) return null;
-
-    return result;
+    return result || null;
   }
 
   public async addGuild(guild: Guild): Promise<void> {
@@ -215,15 +225,20 @@ export class DatabaseManager {
     return [...ignoredChannels];
   }
 
+  public async setIgnoredChannels(guild_id: string, ignored_channels: string[]) {
+    await this.client<Guild>("guilds").where("id", guild_id).update("ignored_channels", JSON.stringify(ignored_channels));
+  }
+
   public async getIgnoredChannels(guild_id: string): Promise<string[] | null> {
     const result = await this.client<Guild>("guilds").select("ignored_channels", "id").where("id", guild_id).first();
 
     if (result == null) return null;
 
     try {
-      return JSON.parse(result.ignored_channels || ";fdmln");
+      return JSON.parse(result.ignored_channels || "f");
     } catch {
-      logger.error(`ignored_channels for ${result.id} was corrupted!`);
+      logger.error(`ignored_channels for ${guild_id} was corrupted! Resetting to default`);
+      await this.setIgnoredChannels(guild_id, []);
       return [];
     }
   }
@@ -332,4 +347,30 @@ export class DatabaseManager {
   }
 
   /* END MESSAGE SECTION */
+
+  /* BEGIN USER SECTION */
+
+  /**
+   * @param id User ID or Unique ID
+   */
+  public async getUser(id: string): Promise<User | undefined> {
+    // This might be a bad idea?
+    const user = await this.client<User>("users").select().where("id", id).orWhere("uniqueId", id).first();
+
+    return user;
+  }
+
+  /**
+   * @param id User ID or Unique ID
+   * @param obanned_reason Reason for ban
+   */
+  public async markUserBanned(id: string, banned_reason?: string) {
+    await this.client<User>("users").where("id", id).orWhere("uniqueId", id).first().update({
+      banned: true,
+      banned_reason,
+    });
+  }
+
+
+  /* END USER SECTION */
 }
