@@ -1,6 +1,7 @@
-import type { Role as DiscordRole } from "discord.js";
+import type { Role as DiscordRole, User as DiscordUser } from "discord.js";
 import { ProxiaEvent } from "classes/Event.js";
-import { stenRemove, stenEncode } from "utils/sten.js";
+import { stenRemove, stenEncode, stenDecode } from "utils/sten.js";
+import { AuditLogEvent } from "discord-api-types/v9";
 import crypto from "node:crypto";
 
 export class ProxiaRoleEvent extends ProxiaEvent {
@@ -36,9 +37,12 @@ export class ProxiaRoleEvent extends ProxiaEvent {
       throw new Error("Role exists");
     }
 
-    let id = crypto.randomBytes(2).toString("hex");
-    // TODO: Take guilds into account. ex: grab array of unique ids from guild, then loop through that instead of making constant requests to the database.
-    // aka get unique id, make sure it's unique, blah blah
+    let id: string | undefined;
+    const guildUniqueIds = await this.bot.db.getUniqueRoleIds(role.guild.id);
+
+    while (id === undefined || guildUniqueIds.includes(id)) {
+      id = crypto.randomBytes(2).toString("hex");
+    }
 
     role.name = stenRemove(role.name);
     const stenid = stenEncode(id);
@@ -75,9 +79,53 @@ export class ProxiaRoleEvent extends ProxiaEvent {
 
     const dbRole = await this.bot.db.getRole(oldRole.id, oldRole.guild.id);
 
-    if (dbRole === null) {
+    if (!dbRole) {
       await this.addRole(newRole);
       return;
+    }
+
+    const oldSten = stenDecode(oldRole.name);
+    const newSten = stenDecode(newRole.name);
+
+    if (!oldSten && newSten) return;
+    if (dbRole.name === newRole.name) return;
+
+    // If the user updated the role with a new name, and it didn't include a hidden id
+    if (newSten === null && oldSten !== null) {
+      const roleName = stenRemove(newRole.name).slice(0, 92);
+
+      const roleNameSten = roleName + stenEncode(dbRole.unique_id);
+
+      await newRole.edit({
+        name: roleNameSten,
+      });
+
+      await this.bot.db.updateRole(newRole.id, {
+        name: roleName,
+      });
+      // Someone has commited tomfoolery
+    } else if (oldSten && newSten && oldSten !== newSten) {
+      // Check audit log to see who did this
+      const audit = await newRole.guild.fetchAuditLogs({
+        limit: 1,
+        type: AuditLogEvent.RoleUpdate,
+      });
+
+      audit.entries.forEach((entry) => {
+        if ((entry.target as DiscordRole).id === newRole.id) {
+          const executor = entry.executor as unknown as DiscordUser;
+
+          if (executor) {
+            executor.send(
+              "Please do not directly copy and paste role names from one to another. It contains a special hidden ID that shouldn't be changed.",
+            );
+            // revert the name change
+            newRole.edit({
+              name: oldRole.name,
+            });
+          }
+        }
+      });
     }
   }
 }

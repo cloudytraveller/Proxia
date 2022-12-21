@@ -1,11 +1,13 @@
 import { ProxiaEvent } from "classes/Event.js";
 import { getUserId } from "utils/users.js";
+import axios from "axios";
 import { ButtonStyle } from "discord-api-types/v9";
 import {
   ActionRowBuilder,
   Attachment,
   ButtonBuilder,
   ChannelType,
+  DataResolver,
   Embed,
   Guild,
   GuildMember,
@@ -15,6 +17,7 @@ import {
 import { randomBytes } from "node:crypto";
 
 export class ProxiaMessageEvent extends ProxiaEvent {
+  static timeSinceLastWarning = -1;
   events: ProxiaEventEmitter[] = ["messageCreate"];
   requiredIntents?: ResolvableIntentString[] = ["GuildMessages"];
 
@@ -44,16 +47,10 @@ export class ProxiaMessageEvent extends ProxiaEvent {
       console.error(`Guild ${guild.id} does not exist in database?`);
       return;
     }
+
     const ignoredChannels = await this.bot.db.getIgnoredChannels(guild.id);
 
-    // eslint-disable-next-line eqeqeq
-    if (ignoredChannels == undefined) {
-      console.error("Guild does not have ignored_channels or is null");
-      // Okay so fix it?No, I'm lazy. I'll implement that later.
-      return;
-    }
-
-    if (ignoredChannels.includes(msg.channelId)) {
+    if (ignoredChannels === undefined || ignoredChannels.includes(msg.channelId) || guildDb.disabled) {
       return;
     }
 
@@ -62,17 +59,19 @@ export class ProxiaMessageEvent extends ProxiaEvent {
     const availableWebhooks = [...channelWebhooks.filter((webhook) => webhook.name.startsWith("__PROXIA")).values()];
 
     if (availableWebhooks.length === 0) {
-      // Implement logic to allow 1 warning to be sent per 30 minutes stating that Proxia has no webhooks available and needs a command to run manually.
-      // Or we could just do that right here right now.
+      if (Date.now() - 1000 * 60 * 30 > ProxiaMessageEvent.timeSinceLastWarning) {
+        msg.channel.send({
+          content:
+            "There is currently no webhook setup for this channel. Run /setupwebhook to setup a webhook for this channel, or run /setupwebhooks for all channels in the guild.",
+        });
+        ProxiaMessageEvent.timeSinceLastWarning = Date.now();
+      }
       return;
     }
 
     // Unsure why we're choosing at random. Maybe I did this at first because of ratelimits but even then,
     // There's no logic in place for rate limits.
     const webhook = availableWebhooks[Math.floor(Math.random() * availableWebhooks.length)];
-
-    const attachments: Attachment[] = [];
-    const embeds: Embed[] = [];
 
     // Yes, this is a guild member
     const member = msg.member as GuildMember;
@@ -81,10 +80,9 @@ export class ProxiaMessageEvent extends ProxiaEvent {
     if (!user) {
       // Well, how did we get here? *Letting the days go by...*
       console.error("Oh you've gotta be fucking kidding me.");
+      console.error(`User does not exist in Database even though they should. User ID: ${member.id}`);
       return;
     }
-
-    // const mentionCache = {};
 
     let replyComponent: Unpacked<MessagePayloadOption["components"]>;
 
@@ -127,13 +125,27 @@ export class ProxiaMessageEvent extends ProxiaEvent {
           // @ts-expect-error Should not be null because there's mentions. If it's null, thats a regex issue and this regex is outdated.
           string: new RegExp(`<(?:@[!&]?|#)${mention.id}>`).exec(msg.content)[0],
         };
-        msg.content = msg.content.replace(new RegExp(`<(?:@[!&]?|#)${mention.id}>`, "g"), mentionobj[mention.id].id);
+        msg.content = msg.content.replace(new RegExp(`<(?:@[!&]?|#)${mention.id}>`, "g"), mentionCache[mention.id].id);
+      }
+    }
+
+    // const stickers: Sticker[] = [...msg.stickers.values()];
+    const attachments: Attachment[] = [];
+    const embeds: Embed[] = [];
+
+    // Process attachments (Make sure to check guild boost level for attachments.)
+
+    if ([...msg.attachments.values()].length > 0) {
+      for (const attachment of msg.attachments.values()) {
+        const resolvedAttachment = await DataResolver.resolveFile(attachment.attachment);
+        resolvedAttachment.data;
+
+        this.bot.config.attachmentsDirectory;
+        // TODO: Finish
       }
     }
 
     // Process stickers
-
-    // Process attachments (Make sure to check guild boost level for attachments.)
 
     // Process personal options like owoify and other things
 

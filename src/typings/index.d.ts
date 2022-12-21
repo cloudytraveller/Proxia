@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/naming-convention */
 // Privately imports dependencies
 type PrivateIntentsString = import("discord.js").GatewayIntentBits;
 type PrivateClientEvents = import("discord.js").ClientEvents;
@@ -13,3 +14,8 @@ type DiscordSnowflake = PrivateSnowflake;
 type ResolvableIntentString = import("discord.js").GatewayIntentsString;
 
 type Unpacked<T> = T extends (infer U)[] ? U : T;
+
+// https://stackoverflow.com/questions/39494689/is-it-possible-to-restrict-number-to-a-certain-range/70307091#70307091
+type Enumerate<N extends number, Acc extends number[] = []> = Acc["length"] extends N ? Acc[number] : Enumerate<N, [...Acc, Acc["length"]]>;
+
+type Range<F extends number, T extends number> = Exclude<Enumerate<T>, Enumerate<F>>;

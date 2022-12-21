@@ -15,4 +15,9 @@ interface ProxiaConfig {
   };
 
   clientOptions?: ClientOptions | Record<string, unknown>;
+
+  activities: string[] | false;
+
+  // Minimum is 5
+  activityInterval: Range<5, 42069>;
 }

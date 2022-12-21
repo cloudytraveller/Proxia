@@ -5,7 +5,7 @@ import { loadCommands, loadEvents, registerSlashCommands } from "../utils/loader
 import { logger } from "../utils/logger.js";
 import { DatabaseManager } from "./Database.js";
 // import { DatabaseManager } from "./Database.js";
-import { Client, Collection, GatewayIntentBits } from "discord.js";
+import { Client, Collection, GatewayIntentBits, ActivityType } from "discord.js";
 import path from "node:path";
 import url from "node:url";
 
@@ -34,6 +34,10 @@ export class ProxiaClient extends Client {
 
   // A collection of loggers
   readonly loggers: Collection<string, ProxiaLogger> = new Collection();
+
+  lastActivityIndex = -1;
+
+  changeActivityTimer: NodeJS.Timer | undefined;
 
   constructor(config: ProxiaConfig) {
     super({
@@ -66,12 +70,41 @@ export class ProxiaClient extends Client {
         // Registers commands;
         registerSlashCommands(this);
 
-        logger.info(`Logged in as ${this.user?.tag} in ${this.guilds.cache.size} guilds on shard #${this.shard?.ids[0]}`);
-        logger.info(`${this.commands.size} commands loaded on shard #${this.shard?.ids[0]}`);
-        logger.info(`${this.events.size} events loaded on shard #${this.shard?.ids[0]}`);
+        logger.info(
+          `Logged in as ${this.user?.tag} in ${this.guilds.cache.size} guilds ${this.shard && `on shard #${this.shard?.ids[0]}`}`,
+        );
+        logger.info(`${this.commands.size} commands loaded ${(this.shard && `on shard #${this.shard?.ids[0]}`) || ""}`);
+        logger.info(`${this.events.size} events loaded ${this.shard && `on shard #${this.shard?.ids[0]}`}` || "");
+
+        // Activity changing
+        if (this.config.activities && this.config.activities.length > 0) {
+          this.changeActivityTimer = setInterval(
+            this.changeActivity,
+            this.config.activityInterval >= 1 ? 1000 * 60 * this.config.activityInterval : 1000 * 60 * 1,
+          );
+        }
       });
     } catch (error) {
       logger.error(`An error occured while initializing Proxia: ${error}`);
+    }
+  }
+
+  public changeActivity() {
+    // For sake of simplicity
+    const activities = this.config.activities;
+    if (this.user && Array.isArray(activities) && activities.length > 0) {
+      let index = -1;
+
+      while (index === this.lastActivityIndex || index === -1) {
+        index = Math.floor(Math.random() * activities.length);
+      }
+
+      this.lastActivityIndex = index;
+      this.user.setActivity({
+        name: activities[index],
+        type: ActivityType.Playing,
+      });
+      return;
     }
   }
 }

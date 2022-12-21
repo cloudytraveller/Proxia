@@ -1,20 +1,32 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/naming-convention */
 interface Message {
+  // Discord Snowflake
   id: string;
+  // ID of the user who sent the messagea
   user_id: string;
+  // ID Of the guild the message was sent in
   guild_id: string;
+  // ID of the channel the message was sent in
   channel_id: string;
+  // Content of the message
   content: string;
+  // URL to the users avatar
   avatar_url?: string;
+  // Webhook that was used to send the message
   webhook_id: string;
+  // Date the message was created
   createdTimestamp: number;
-  attachments?: string[];
-  deleted?: boolean;
+  // Message attachments, if any
+  attachments: string[];
+  // If the message has been deleted
+  deleted: boolean;
+  // Edits that have been made to the message
   edits: {
     date: number;
     content: string;
   }[];
+  // Message that the message is replying to
   reply?: {
     message_id?: string;
     author_id?: string;
@@ -44,6 +56,7 @@ interface Attachment {
   guild_id: string;
   channel_id: string;
   message_id: string;
+  thread_id?: string;
   filename: string;
   spoiler: boolean;
   size: number;
@@ -54,74 +67,48 @@ interface User {
   id: string;
   username: string;
   discriminator: string;
-  nickname: string;
-  uniqueId: string;
   avatar_url: string;
-  guilds: string | string[];
-  existent: boolean;
-  roles: string | string[];
-  oauth2:
-    | {
-        access_token: string;
-        refresh_token: string;
-        created_at: number;
-        expires_in: number;
-        expires_at: number;
-        token_type: string;
-        user_id: string;
-      }
-    | string
-    | string[];
-  banned: boolean;
-  banned_reason: string;
-  secret: string;
-  seen_secret: boolean;
-  personal_user_config:
-    | {
-        // owoify?: boolean;
-        [key: string]: any;
-      }
-    | string;
+  guilds: {
+    id: string;
+    nickname: string;
+    unique_id: string;
+    existent: boolean;
+    banned: boolean;
+    banned_reason: string;
+    roles: string[];
+    preferred_avatar_url: string;
+  }[];
+  oauth2: {
+    access_token: string;
+    refresh_token: string;
+    created_at: number;
+    expires_in: number;
+    expires_at: number;
+    token_type: string;
+    user_id: string;
+  };
+  recoverykey: string;
+  seen_recoverykey: boolean;
+  // Times this user has used their recovery key on another account.
+  recoverykey_timestamps: string[];
+  // personal_user_config:
+  //   | {
+  //       // owoify?: boolean;
+  //       [key: string]: any;
+  //     }
+  //   | string;
 }
 
 interface Guild {
   id: string;
   owner_id: string;
-  ignored_channels: string;
+  ignored_channels: string[];
   ghost_hide_mentions: boolean;
+  disabled: boolean;
 }
 
 interface oauth2_token {
   token: string;
-}
-
-// unused
-interface error_report {
-  ip: string;
-  raw: string;
-  message: string;
-  error: {
-    stack: string;
-  };
-  diagnostics?:
-    | {
-        client: "powercord" | "aliucord" | "betterdiscord";
-        plugin: {
-          name: string;
-          version: string;
-        };
-        discord: {
-          native: string;
-          build: string;
-          channel: string;
-        };
-        os: string;
-        process: {
-          platform: string;
-          arch: string;
-        };
-      }
-    | string;
 }
 
 interface Setting {

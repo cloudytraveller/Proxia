@@ -13,6 +13,12 @@ const config: ProxiaConfig = {
   },
 
   clientOptions: {},
-}
+
+  // Status messages. Leave empty or set to false to disable.
+  activities: [],
+
+  // Change interval in minutes.
+  activityInterval: 5,
+};
 
 export default config;
