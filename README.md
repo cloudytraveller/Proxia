@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="lol" alt="Insert Logo Here">
+<img src="resources/proxia_rounded.png" alt="Logo pastel colors with a light pink in the bottom left to light purple in the top right smooth gradient, with purple stroked white text in the middle with a faint light blue glow. Created by Cloudy">
 
 <h1>Proxia</h1>
 
@@ -13,8 +13,11 @@ A proxy message bot for your Discord.
 
 # What is Proxia?
 
-Proxia is a Discord bot that proxies your messages through Discord's webhook, while supporting threads, replies, emotes, and much more.
+Proxia is a Discord bot that proxies your messages through Discord's webhook, while supporting attachments, threads, replies, emotes, and much more, with the bonus of saving user information via a recovery key, to restore later in the event of a server being deleted.
+
 Think of it similar to [PluralKit](https://pluralkit.me/)
+
+The main goal of this this is to anonymize yourself and your server members in a Discord server. Proxia can't be turned off
 
 # Installation
 
