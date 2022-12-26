@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="resources/proxia_rounded.png" alt="Logo pastel colors with a light pink in the bottom left to light purple in the top right smooth gradient, with purple stroked white text in the middle with a faint light blue glow. Created by Cloudy">
+<img src="resources/proxia_rounded.png" alt="Logo pastel colors with a light pink in the bottom left to light purple in the top right smooth gradient, with purple stroked white text in the middle with a faint light blue glow. Created by Cloudy" width="256px">
 
 <h1>Proxia</h1>
 
