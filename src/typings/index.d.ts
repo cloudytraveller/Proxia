@@ -19,3 +19,8 @@ type Unpacked<T> = T extends (infer U)[] ? U : T;
 type Enumerate<N extends number, Acc extends number[] = []> = Acc["length"] extends N ? Acc[number] : Enumerate<N, [...Acc, Acc["length"]]>;
 
 type Range<F extends number, T extends number> = Exclude<Enumerate<T>, Enumerate<F>>;
+
+type Omit2<T, K extends keyof T> = Pick<T, Exclude<keyof T, K>>;
+
+// Type alias
+type Optional<T> = Partial<T>;

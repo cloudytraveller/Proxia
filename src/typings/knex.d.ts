@@ -1,5 +1,4 @@
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-import type { Knex } from "knex";
+// import "knex/types/tables";
 
 declare module "knex/types/tables" {
   interface Tables {
