@@ -6,3 +6,7 @@ export const slashCommandNameRegex = /^[-_\p{L}\p{N}\p{sc=Deva}\p{sc=Thai}]{1,32
 
 // The version of Proxia currently running
 export const proxiaVersion = process.env.npm_package_version ?? "develop";
+
+export const proxiaProtectedString = "**[*Px*]**";
+
+export const proxiaWebhookPrefix = "__PROXIA_";

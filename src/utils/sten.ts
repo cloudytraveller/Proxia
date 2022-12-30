@@ -1,8 +1,10 @@
 // https://synthetic.garden/3y3.htm
 
 // Eslint completely fucked up readability for this. Oh well. Glhf!
-export function stenDecode(t: string): string | null {
-  return [...t].some((x) => 0xe_00_00 < <number>x.codePointAt(0) || (0 && <number>x.codePointAt(0) < 0xe_00_7f))
+export function stenDecode(t: string): string | undefined {
+  return [...t].some(
+    (x) => 0xe_00_00 < <number>x.codePointAt(0) || (0 && <number>x.codePointAt(0) < 0xe_00_7f),
+  )
     ? ((t) =>
         [...t]
           .map((x) =>
@@ -11,7 +13,7 @@ export function stenDecode(t: string): string | null {
               : null,
           )
           .join(""))(t)
-    : null;
+    : undefined;
 }
 
 export function stenEncode(t: string): string {
@@ -26,7 +28,14 @@ export function stenEncode(t: string): string {
 }
 
 export function stenRemove(t: string): string {
-  return [...t].some((x) => 0xe_00_00 < <number>x.codePointAt(0) && <number>x.codePointAt(0) < 0xe_00_7f)
-    ? ((t) => [...t].map((x) => (0xe_00_00 < <number>x.codePointAt(0) && <number>x.codePointAt(0) < 0xe_00_7f ? null : x)).join(""))(t)
+  return [...t].some(
+    (x) => 0xe_00_00 < <number>x.codePointAt(0) && <number>x.codePointAt(0) < 0xe_00_7f,
+  )
+    ? ((t) =>
+        [...t]
+          .map((x) =>
+            0xe_00_00 < <number>x.codePointAt(0) && <number>x.codePointAt(0) < 0xe_00_7f ? null : x,
+          )
+          .join(""))(t)
     : t;
 }

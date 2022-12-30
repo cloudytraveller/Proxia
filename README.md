@@ -19,6 +19,8 @@ Think of it similar to [PluralKit](https://pluralkit.me/)
 
 The main goal of this this is to anonymize yourself and your server members in a Discord server. Proxia can't be turned off
 
+Althrough Proxia supports multiple guilds, it's highly recommended you stick to having the bot in one guild.
+
 # Installation
 
 TODO
