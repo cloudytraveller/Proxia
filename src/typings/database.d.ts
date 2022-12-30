@@ -1,10 +1,15 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/naming-convention */
-interface Message {
+
+interface Table {
+  _tableName: string;
+}
+interface _Message extends Table {
+  _tableName: "messages";
   // Discord Snowflake
   id: string;
-  // ID of the user who sent the messagea
-  user_id: string;
+  // Unique ID of the user who sent the messagea
+  user_unique_id: string;
   // ID Of the guild the message was sent in
   guild_id: string;
   // ID of the channel the message was sent in
@@ -33,7 +38,10 @@ interface Message {
   };
 }
 
-interface Role {
+type Message = Omit<_Message, "_tableName">;
+
+interface _Role extends Table {
+  _tableName: "roles";
   name: string;
   id: string;
   unique_id: string;
@@ -41,7 +49,10 @@ interface Role {
   existent: boolean;
 }
 
-interface Webhook {
+type Role = Omit<_Role, "_tableName">;
+
+interface _Webhook extends Table {
+  _tableName: "webhooks";
   id: string;
   name: string;
   token: string;
@@ -51,34 +62,38 @@ interface Webhook {
   created_timestamp: number;
 }
 
-interface Attachment {
+type Webhook = Omit<_Webhook, "_tableName">;
+
+interface _Attachment extends Table {
+  _tableName: "attachments";
   id: string;
-  guild_id: string;
-  channel_id: string;
-  message_id: string;
-  thread_id?: string;
   filename: string;
   spoiler: boolean;
   size: number;
   local_file_path: string;
+  deleted: boolean;
 }
 
-interface User {
+type Attachment = Omit<_Attachment, "_tableName">;
+
+interface _User extends Table {
+  _tableName: "users";
   id: string;
   username: string;
   discriminator: string;
-  avatar_url: string;
+  avatar_url?: string | null;
   guilds: {
-    id: string;
-    nickname: string;
-    unique_id: string;
-    existent: boolean;
-    banned: boolean;
-    banned_reason: string;
-    roles: string[];
-    preferred_avatar_url: string;
-  }[];
-  oauth2: {
+    [guild_id: string]: {
+      nickname: string;
+      unique_id: string;
+      existent: boolean;
+      banned: boolean;
+      banned_reason: string;
+      roles: string[];
+      preferred_avatar_url: string;
+    };
+  };
+  oauth2?: {
     access_token: string;
     refresh_token: string;
     created_at: number;
@@ -89,29 +104,35 @@ interface User {
   };
   recoverykey: string;
   seen_recoverykey: boolean;
-  // Times this user has used their recovery key on another account.
+  /* Times this user has used their recovery key on another account.*/
   recoverykey_timestamps: string[];
   // personal_user_config:
-  //   | {
+  //   {
   //       // owoify?: boolean;
   //       [key: string]: any;
   //     }
-  //   | string;
+  //   string;
 }
 
-interface Guild {
+type User = Omit<_User, "_tableName">;
+
+interface _Guild extends Table {
+  _tableName: "guilds";
   id: string;
   owner_id: string;
   ignored_channels: string[];
   ghost_hide_mentions: boolean;
+  // make sure to ignore comments!
   disabled: boolean;
 }
 
-interface oauth2_token {
+type Guild = Omit<_Guild, "_tableName">;
+
+interface oauth2_token extends Table {
   token: string;
 }
 
-interface Setting {
+interface Setting extends Table {
   option: string;
   value: string;
 }

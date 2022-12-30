@@ -1,0 +1,75 @@
+export const Schema = [
+  {
+    name: "messages",
+    columns: [
+      { name: "id", type: "text" },
+      { name: "user_unique_id", type: "text" },
+      { name: "guild_id", type: "text" },
+      { name: "channel_id", type: "text" },
+      { name: "content", type: "text" },
+      { name: "avatar_url", type: "text" },
+      { name: "webhook_id", type: "text" },
+      { name: "createdTimestamp", type: "integer" },
+      { name: "attachments", type: "text" },
+      { name: "deleted", type: "boolean" },
+      { name: "edits", type: "text" },
+      { name: "reply", type: "text" },
+    ],
+  },
+  {
+    name: "roles",
+    columns: [
+      { name: "name", type: "text" },
+      { name: "id", type: "text" },
+      { name: "unique_id", type: "text" },
+      { name: "guild_id", type: "text" },
+      { name: "existent", type: "boolean" },
+    ],
+  },
+  {
+    name: "webhooks",
+    columns: [
+      { name: "id", type: "text" },
+      { name: "name", type: "text" },
+      { name: "token", type: "text" },
+      { name: "channel_id", type: "text" },
+      { name: "guild_id", type: "text" },
+      { name: "channel_name", type: "text" },
+      { name: "created_timestamp", type: "integer" },
+    ],
+  },
+  {
+    name: "attachments",
+    columns: [
+      { name: "id", type: "text" },
+      { name: "filename", type: "text" },
+      { name: "spoiler", type: "boolean" },
+      { name: "size", type: "integer" },
+      { name: "local_file_path", type: "text" },
+    ],
+  },
+  {
+    name: "users",
+    columns: [
+      { name: "id", type: "text" },
+      { name: "username", type: "text" },
+      { name: "discriminator", type: "text" },
+      { name: "avatar_url", type: "text" },
+      { name: "guilds", type: "text" },
+      { name: "oauth2", type: "text" },
+      { name: "recoverykey", type: "text" },
+      { name: "seen_recoverykey", type: "boolean" },
+      { name: "recoverykey_timestamps", type: "text" },
+    ],
+  },
+  {
+    name: "guilds",
+    columns: [
+      { name: "id", type: "text" },
+      { name: "owner_id", type: "text" },
+      { name: "ignored_channels", type: "text" },
+      { name: "ghost_hide_mentions", type: "boolean" },
+      { name: "disabled", type: "boolean" },
+    ],
+  },
+];
