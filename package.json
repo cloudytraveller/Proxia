@@ -13,18 +13,22 @@
     "format": "cross-env prettier --write './**/**/*.{js,json,md,ts,yml}'",
     "prebuild": "cross-env rimraf ./dist/",
     "start": "pnpm build && cross-env NODE_ENV=production node --no-warnings ./dist/src/index.js",
-    "test": "cross-env tsc --noEmit && eslint . && prettier --c ."
+    "test": "cross-env tsc --noEmit && eslint . && prettier --c .",
+    "db:genschema": "cross-env node --no-warnings --loader ts-node/esm -r ts-node/register ./src/utils/dbSchemaParser.ts"
   },
   "engines": {
     "node": "^18.12.1",
     "pnpm": ">=7.0.0"
   },
   "dependencies": {
-    "axios": "^1.2.1",
+    "@types/mime-types": "^2.1.1",
+    "axios": "^1.2.2",
     "better-sqlite3": "^7.6.2",
-    "discord-api-types": "^0.37.24",
+    "discord-api-types": "^0.37.25",
     "discord.js": "^14.7.1",
+    "eslint-plugin-knex": "^0.2.1",
     "knex": "^2.3.0",
+    "mime-types": "^2.1.35",
     "nodemon": "^2.0.20",
     "pino": "^8.8.0",
     "pino-pretty": "^9.1.1"
@@ -32,9 +36,10 @@
   "devDependencies": {
     "@sysdotini/eslint-config": "^3.1.3",
     "@types/eslint": "^8.4.10",
-    "@types/node": "^18.11.17",
-    "@typescript-eslint/eslint-plugin": "^5.47.0",
-    "@typescript-eslint/parser": "^5.47.0",
+    "@types/node": "^18.11.18",
+    "@typescript-eslint/eslint-plugin": "^5.47.1",
+    "@typescript-eslint/parser": "^5.47.1",
+    "@typescript-eslint/typescript-estree": "^5.47.1",
     "concurrently": "^7.6.0",
     "cross-env": "^7.0.3",
     "eslint": "^8.30.0",
