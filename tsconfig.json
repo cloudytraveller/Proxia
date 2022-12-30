@@ -1,10 +1,11 @@
 {
   "exclude": ["*.d.ts", "dist", "node_modules"],
-  "include": ["./src/**/**/*", "./src/**/**/*.json", "*.ts", "knexfile.js", "database/knexfile.ts"],
+  "include": ["./src/**/**/*", "./src/**/**/*.json", "*.ts"],
   "ts-node": {
     "esm": true
   },
   "compilerOptions": {
+    "types": ["node"],
     "allowJs": false,
     "allowSyntheticDefaultImports": true,
     "alwaysStrict": true,
