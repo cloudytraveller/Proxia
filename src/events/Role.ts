@@ -2,10 +2,10 @@ import type { Role as DiscordRole, User as DiscordUser } from "discord.js";
 import { ProxiaEvent } from "classes/Event.js";
 import { stenRemove, stenEncode, stenDecode } from "utils/sten.js";
 import { AuditLogEvent } from "discord-api-types/v9";
-import crypto from "node:crypto";
+import { randomBytes } from "node:crypto";
 
 export class ProxiaRoleEvent extends ProxiaEvent {
-  events: ProxiaEventEmitter[] = ["roleCreate", "roleDelete", "roleUpdate"];
+  events: ProxiaEventEmitter[] = ["roleCreate", "roleDelete", "roleUpdate", "guildMemberAdd"];
   requiredIntents?: ResolvableIntentString[] = ["Guilds"];
 
   public async run(_event: ProxiaEventEmitter, role: DiscordRole, role2?: DiscordRole) {
@@ -41,14 +41,16 @@ export class ProxiaRoleEvent extends ProxiaEvent {
     const guildUniqueIds = await this.bot.db.getUniqueRoleIds(role.guild.id);
 
     while (id === undefined || guildUniqueIds.includes(id)) {
-      id = crypto.randomBytes(2).toString("hex");
+      id = randomBytes(2).toString("hex");
     }
 
     role.name = stenRemove(role.name);
     const stenid = stenEncode(id);
     let newName: string;
 
-    role.name.length > 92 ? (newName = role.name.slice(0, 92) + stenid) : (newName = role.name + stenid);
+    role.name.length > 92
+      ? (newName = role.name.slice(0, 92) + stenid)
+      : (newName = role.name + stenid);
 
     await role.setName(newName);
 
@@ -111,21 +113,22 @@ export class ProxiaRoleEvent extends ProxiaEvent {
         type: AuditLogEvent.RoleUpdate,
       });
 
-      audit.entries.forEach((entry) => {
+      let executor: DiscordUser | undefined;
+      for (const entry of audit.entries.values()) {
         if ((entry.target as DiscordRole).id === newRole.id) {
-          const executor = entry.executor as unknown as DiscordUser;
-
-          if (executor) {
-            executor.send(
-              "Please do not directly copy and paste role names from one to another. It contains a special hidden ID that shouldn't be changed.",
-            );
-            // revert the name change
-            newRole.edit({
-              name: oldRole.name,
-            });
-          }
+          executor = entry.executor as unknown as DiscordUser;
+          // revert the name change
+          newRole.edit({
+            name: oldRole.name,
+          });
         }
-      });
+      }
+
+      if (executor) {
+        executor.send(
+          "Please do not directly copy and paste role names from one to another. It contains a special hidden ID that shouldn't be changed.",
+        );
+      }
     }
   }
 }
