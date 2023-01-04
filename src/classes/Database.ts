@@ -22,8 +22,8 @@ import {
   UserNotExistError,
   UserNotInGuildError,
 } from "./Errors.js";
-import { Schema as ParsedDatabaseSchema } from "ParsedDatabaseSchema.js";
-import { logger } from "utils/logger.js";
+import { Schema as ParsedDatabaseSchema } from "../ParsedDatabaseSchema.js";
+import { logger } from "../utils/logger.js";
 import Knex from "knex";
 
 export class DatabaseManager {
@@ -284,19 +284,20 @@ export class DatabaseManager {
   /* END GUILD SECTION */
 
   /* BEGIN MESSAGE SECTION */
-  // I'm not entirely sure why I'm creating two functions that do the same thing.
-  // I just don't want to select a full message object for `messageExists`
+
   public async getMessage(
     message_id: string,
     guild_id: string,
-    channel_id?: string,
+    channel_id: string,
+    thread_id?: string,
   ): Promise<Message | undefined> {
     const result = await this.client<Message>("messages")
       .select()
       .where({
         id: message_id,
         guild_id,
-        channel_id: channel_id == null ? undefined : channel_id,
+        channel_id,
+        thread_id: thread_id == null ? undefined : thread_id,
       })
       .first();
 
@@ -306,27 +307,40 @@ export class DatabaseManager {
   public async messageExists(
     message_id: string,
     guild_id: string,
-    channel_id?: string,
+    channel_id: string,
+    thread_id?: string,
   ): Promise<boolean> {
     const result = await this.client<Message>("messages")
       .select("id")
       .where({
         id: message_id,
         guild_id,
-        channel_id: channel_id == null ? undefined : channel_id,
+        channel_id,
+        thread_id: thread_id == null ? undefined : thread_id,
       })
       .first();
 
     return !!result;
   }
 
-  public async deleteMessage(id: string, channel_id: string, guild_id: string): Promise<void> {
+  public async deleteMessage({
+    id,
+    channel_id,
+    guild_id,
+    thread_id,
+  }: {
+    id: string;
+    channel_id: string;
+    guild_id: string;
+    thread_id?: string;
+  }): Promise<void> {
     // eh fuck.
     this.client<Message>("messages")
       .where({
         id,
         channel_id,
         guild_id,
+        thread_id: thread_id ?? undefined,
       })
       .first()
       .update({
@@ -342,6 +356,7 @@ export class DatabaseManager {
       user_unique_id: "",
       guild_id: "",
       channel_id: "",
+      thread_id: "",
       content: "",
       avatar_url: "",
       webhook_id: "",
@@ -363,37 +378,41 @@ export class DatabaseManager {
     message_id,
     guild_id,
     channel_id,
+    thread_id,
     new_content,
     edit_epoch,
   }: {
     message_id: string;
     guild_id: string;
-    channel_id?: string;
+    channel_id: string;
+    thread_id: string;
     new_content: string;
     edit_epoch: number;
   }): Promise<void> {
-    if (!(await this.messageExists(message_id, guild_id, channel_id)))
+    if (!(await this.messageExists(message_id, guild_id, channel_id, thread_id)))
       throw new MessageNotExistError();
 
+    const where = {
+      id: message_id,
+      guild_id,
+      channel_id,
+      thread_id: thread_id == null ? undefined : thread_id,
+    };
+
     const dbResult = parseFromDatabaseJson(
-      await this.client<Message>("messages")
-        .select("edits")
-        .where({
-          id: message_id,
-          guild_id,
-          channel_id: channel_id == null ? undefined : channel_id,
-        })
-        .first(),
+      await this.client<Message>("messages").select("edits").where(where).first(),
     );
 
     if (!dbResult) throw new MessageNotExistError();
 
     dbResult.edits.push({ content: new_content, date: edit_epoch });
 
-    await this.client<Message>("messages").update(
-      "edits",
-      parseToDatabaseJson([...dbResult.edits, { content: new_content, date: edit_epoch }]),
-    );
+    await this.client<Message>("messages")
+      .update(
+        "edits",
+        parseToDatabaseJson([...dbResult.edits, { content: new_content, date: edit_epoch }]),
+      )
+      .where(where);
   }
 
   /* END MESSAGE SECTION */
@@ -401,12 +420,16 @@ export class DatabaseManager {
   /* BEGIN USER SECTION */
 
   /**
-   * @param id User ID
+   * @param id User ID or Unique ID
    */
 
   public async getUser(id: string): Promise<User | null | undefined> {
     const user = parseFromDatabaseJson(
-      await this.client<User>("users").select().where("id", id).first(),
+      await this.client<User>("users")
+        .select()
+        .where("id", id)
+        .orWhereLike("guilds", '%unique_id":"' + id + '"%')
+        .first(),
     );
     return user;
   }
@@ -492,7 +515,9 @@ export class DatabaseManager {
 
     user.guilds[guild_id] = guildUserBase;
 
-    await this.client<User>("users").update("guilds", parseToDatabaseJson(user.guilds)).where({ id });
+    await this.client<User>("users")
+      .update("guilds", parseToDatabaseJson(user.guilds))
+      .where({ id });
 
     const updatedUser = parseFromDatabaseJson(
       await this.client<User>("users").select().where({ id }).first(),
@@ -601,6 +626,33 @@ export class DatabaseManager {
   }
 
   /* END ATTACHMENTS SECTION */
+
+  /* BEGIN WEBHOOKS SETION */
+
+  public async addWebhook(webhook: Webhook): Promise<Webhook> {
+    const baseWebhook: Webhook = {
+      id: "",
+      name: "",
+      channel_id: "",
+      guild_id: "",
+      token: "",
+      created_timestamp: 0,
+    };
+
+    Object.assign(baseWebhook, webhook);
+
+    await this.client<Webhook>("webhooks").insert(baseWebhook);
+
+    return this.client<Webhook>("webhooks")
+      .select()
+      .where("id", webhook.id)
+      .first() as unknown as Webhook;
+  }
+
+  public async deleteWebhook(id: string): Promise<void> {
+    await this.client<Webhook>("webhooks").delete().where({ id }).first();
+  }
+  /* END WEBHOOKS SETION */
 }
 
 function parseToDatabaseJson(obj: any): any {

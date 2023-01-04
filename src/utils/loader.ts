@@ -7,7 +7,7 @@
 import type { ProxiaClient } from "../classes/Client.js";
 import type { CallableProxiaCommand } from "../classes/Command.js";
 import type { CallableProxiaEvent, ProxiaEvent } from "../classes/Event.js";
-import type { ProxiaLogger } from "classes/Logger.js";
+import type { ProxiaLogger } from "../classes/Logger.js";
 import type { Collection } from "discord.js";
 import type { PathLike } from "node:fs";
 import { moduleFiletypeRegex, slashCommandNameRegex } from "./constants.js";
@@ -40,7 +40,9 @@ export async function loadCommands(bot: ProxiaClient, directory: PathLike): Prom
 
     // Tries to load the command
     try {
-      const importedCommand: Record<string, CallableProxiaCommand> = await import(`file://${directory}/${file.name}`);
+      const importedCommand: Record<string, CallableProxiaCommand> = await import(
+        `file://${directory}/${file.name}`
+      );
       commandToLoad = importedCommand[Object.keys(importedCommand)[0]];
     } catch (error) {
       logger.warn(`Command ${file.name} failed to load, see stack trace below:`);
@@ -78,10 +80,14 @@ export async function loadEvents(bot: ProxiaClient, directory: PathLike, isLogge
     if (!moduleFiletypeRegex.test(file.name)) return;
 
     try {
-      const importedEvent: Record<string, CallableProxiaEvent> = await import(`file://${directory}/${file.name}`);
+      const importedEvent: Record<string, CallableProxiaEvent> = await import(
+        `file://${directory}/${file.name}`
+      );
       eventToLoad = importedEvent[Object.keys(importedEvent)[0]];
     } catch (error) {
-      logger.error(`${isLogger ? "Logger" : "Event"} ${file.name} failed to load, see stack trace below:`);
+      logger.error(
+        `${isLogger ? "Logger" : "Event"} ${file.name} failed to load, see stack trace below:`,
+      );
       throw new Error(`${error}`);
     }
 
@@ -95,7 +101,11 @@ export async function loadEvents(bot: ProxiaClient, directory: PathLike, isLogge
     if (event.requiredIntents?.length) {
       const missingIntents = checkIntents(bot.options, event.requiredIntents);
       if (missingIntents?.length) {
-        logger.warn(`${isLogger ? "Logger" : "Event"} ${fileName} not loaded: missing intent(s) ${missingIntents.join(", ")}`);
+        logger.warn(
+          `${
+            isLogger ? "Logger" : "Event"
+          } ${fileName} not loaded: missing intent(s) ${missingIntents.join(", ")}`,
+        );
         return;
       }
     }
@@ -114,10 +124,15 @@ export async function loadEvents(bot: ProxiaClient, directory: PathLike, isLogge
  * @param events The events to subscribe to
  */
 
-function subscribeToEvents(bot: ProxiaClient, events: Collection<string, ProxiaEvent | ProxiaLogger>) {
+function subscribeToEvents(
+  bot: ProxiaClient,
+  events: Collection<string, ProxiaEvent | ProxiaLogger>,
+) {
   events.forEach((eventToListenOn) => {
     eventToListenOn.events.forEach((individualEvent) => {
-      bot.on(individualEvent, (...eventParameters) => eventToListenOn.run(individualEvent, ...eventParameters));
+      bot.on(individualEvent, (...eventParameters) =>
+        eventToListenOn.run(individualEvent, ...eventParameters),
+      );
     });
   });
 }
@@ -130,7 +145,10 @@ function subscribeToEvents(bot: ProxiaClient, events: Collection<string, ProxiaE
 
 export function registerSlashCommands(bot: ProxiaClient, guild?: DiscordSnowflake) {
   // This shouldn't happen - but I guess it *can* happen per v10 caching
-  if (!bot.user?.id) throw new Error("Failed to register slash commands: Client user field exists on the logged in account.");
+  if (!bot.user?.id)
+    throw new Error(
+      "Failed to register slash commands: Client user field exists on the logged in account.",
+    );
 
   // Converts the command to Discord API-compatible JSON and removes messageOnly ones
   const jsonData = bot.commands
@@ -147,7 +165,9 @@ export function registerSlashCommands(bot: ProxiaClient, guild?: DiscordSnowflak
 
       cmd.options?.forEach((option) => {
         if (!slashCommandNameRegex.test(option.name)) {
-          logger.warn(`Command ${cmd.name} failed to register: invalid option name: ${option.name}`);
+          logger.warn(
+            `Command ${cmd.name} failed to register: invalid option name: ${option.name}`,
+          );
           valid = false;
         }
       });

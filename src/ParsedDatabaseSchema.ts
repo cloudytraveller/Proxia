@@ -6,6 +6,7 @@ export const Schema = [
       { name: "user_unique_id", type: "text" },
       { name: "guild_id", type: "text" },
       { name: "channel_id", type: "text" },
+      { name: "thread_id", type: "text" },
       { name: "content", type: "text" },
       { name: "avatar_url", type: "text" },
       { name: "webhook_id", type: "text" },
@@ -34,7 +35,6 @@ export const Schema = [
       { name: "token", type: "text" },
       { name: "channel_id", type: "text" },
       { name: "guild_id", type: "text" },
-      { name: "channel_name", type: "text" },
       { name: "created_timestamp", type: "integer" },
     ],
   },
@@ -46,6 +46,7 @@ export const Schema = [
       { name: "spoiler", type: "boolean" },
       { name: "size", type: "integer" },
       { name: "local_file_path", type: "text" },
+      { name: "deleted", type: "boolean" },
     ],
   },
   {

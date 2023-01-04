@@ -51,4 +51,3 @@ export class AttachmentExistsError extends Error {
     super("An attachment with that ID already exists");
   }
 }
-

@@ -1,5 +1,5 @@
 /* eslint-disable unicorn/no-await-expression-member */
-import { ProxiaEvent } from "classes/Event.js";
+import { ProxiaEvent } from "../classes/Event.js";
 import { proxiaWebhookPrefix } from "utils/constants.js";
 import { Collection, Message, PartialMessage, Snowflake } from "discord.js";
 
@@ -25,11 +25,11 @@ export class ProxiaMessageDeleteEvent extends ProxiaEvent {
       return;
 
     try {
-      this.bot.db.deleteMessage(
-        fetchedMessage.id,
-        fetchedMessage.channelId,
-        fetchedMessage.guildId as string,
-      );
+      this.bot.db.deleteMessage({
+        id: fetchedMessage.id,
+        channel_id: fetchedMessage.channelId,
+        guild_id: fetchedMessage.guildId as string,
+      });
     } catch {
       /* empty */
     }

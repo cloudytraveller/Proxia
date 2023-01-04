@@ -66,18 +66,18 @@ async function main() {
           (prop) => (prop?.key as Identifier).name === "_tableName",
         ),
     )
-    .map((Interface) => {
+    .map((_interface) => {
       const tableName: string = (
         (
           (
-            (Interface.body.body as TSPropertySignature[]).find(
+            (_interface.body.body as TSPropertySignature[]).find(
               (prop) => (prop?.key as Identifier)?.name === "_tableName",
             )?.typeAnnotation as unknown as TSTypeAnnotation
           )?.typeAnnotation as TSLiteralType
         )?.literal as Literal
       )?.value as string;
 
-      const columns = Interface.body.body
+      const columns = _interface.body.body
         .filter((body) => !((body as TSPropertySignature).key as Identifier).name.startsWith("_"))
         .map((body) => {
           const columnResult = {} as TableColumn;

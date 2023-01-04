@@ -5,10 +5,18 @@ import { loadCommands, loadEvents, registerSlashCommands } from "../utils/loader
 import { logger } from "../utils/logger.js";
 import { DatabaseManager } from "./Database.js";
 // import { DatabaseManager } from "./Database.js";
-import { Client, Collection, GatewayIntentBits, ActivityType, Role as DiscordRole } from "discord.js";
+import {
+  Client,
+  Collection,
+  GatewayIntentBits,
+  ActivityType,
+  Role as DiscordRole,
+} from "discord.js";
 import { randomBytes } from "node:crypto";
 import path from "node:path";
 import url from "node:url";
+import { mkdir } from "node:fs/promises";
+import { existsSync } from "node:fs";
 
 // Are we being sane or not?
 const IS_PRODUCTION = process.env.NODE_ENV === "production";
@@ -96,6 +104,12 @@ export class ProxiaClient extends Client {
       // Wait for the initial login before loading modules
       this.once("ready", async () => {
         // Loads all commands, events, and loggers
+
+        const dirs = [COMMANDS_DIRECTORY, EVENTS_DIRECTORY, LOGGERS_DIRECTORY];
+        for (const dir of dirs) {
+          if (!existsSync(dir)) await mkdir(dir);
+        }
+
         await loadCommands(this, COMMANDS_DIRECTORY);
         await loadEvents(this, EVENTS_DIRECTORY);
         await loadEvents(this, LOGGERS_DIRECTORY, true);

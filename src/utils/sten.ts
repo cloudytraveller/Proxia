@@ -1,3 +1,4 @@
+/* eslint-disable unicorn/no-null */
 // https://synthetic.garden/3y3.htm
 
 // Eslint completely fucked up readability for this. Oh well. Glhf!

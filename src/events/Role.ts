@@ -1,11 +1,11 @@
 import type { Role as DiscordRole, User as DiscordUser } from "discord.js";
-import { ProxiaEvent } from "classes/Event.js";
+import { ProxiaEvent } from "../classes/Event.js";
 import { stenRemove, stenEncode, stenDecode } from "utils/sten.js";
 import { AuditLogEvent } from "discord-api-types/v9";
 import { randomBytes } from "node:crypto";
 
 export class ProxiaRoleEvent extends ProxiaEvent {
-  events: ProxiaEventEmitter[] = ["roleCreate", "roleDelete", "roleUpdate", "guildMemberAdd"];
+  events: ProxiaEventEmitter[] = ["roleCreate", "roleDelete", "roleUpdate"];
   requiredIntents?: ResolvableIntentString[] = ["Guilds"];
 
   public async run(_event: ProxiaEventEmitter, role: DiscordRole, role2?: DiscordRole) {
@@ -102,7 +102,7 @@ export class ProxiaRoleEvent extends ProxiaEvent {
         name: roleNameSten,
       });
 
-      await this.bot.db.updateRole(newRole.id, {
+      await this.bot.db.updateRole(newRole.id, newRole.guild.id, {
         name: roleName,
       });
       // Someone has commited tomfoolery

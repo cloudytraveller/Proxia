@@ -1,5 +1,5 @@
-import { ProxiaGuildMembersEvent } from "./GuildMembers.js";
-import { ProxiaEvent } from "classes/Event.js";
+import { ProxiaEvent } from "../classes/Event.js";
+import { proxiaWebhookPrefix } from "utils/constants.js";
 import { getUserId } from "utils/users.js";
 import axios from "axios";
 import { ButtonStyle } from "discord-api-types/v9";
@@ -17,7 +17,7 @@ import {
   StickerFormatType,
 } from "discord.js";
 import mimeTypes from "mime-types";
-import { randomBytes } from "node:crypto";
+import { randomBytes, randomUUID } from "node:crypto";
 import fs from "node:fs";
 import fsp from "node:fs/promises";
 import path from "node:path";
@@ -75,29 +75,31 @@ export class ProxiaMessageEvent extends ProxiaEvent {
     const channelWebhooks = await msg.channel.fetchWebhooks();
 
     const availableWebhooks = [
-      ...channelWebhooks.filter((webhook) => webhook.name.startsWith("__PROXIA")).values(),
+      ...channelWebhooks
+        .filter(
+          (webhook) =>
+            webhook.name.startsWith(proxiaWebhookPrefix) || webhook.owner?.id === this.bot.user?.id,
+        )
+        .values(),
     ];
 
     if (availableWebhooks.length === 0) {
-      // I'm sure there's better ways to do this
-      if (!ProxiaMessageEvent.warningCache[msg.guildId])
-        ProxiaMessageEvent.warningCache[msg.guildId] = {};
+      const webhook = await msg.channel.createWebhook({
+        name: `${proxiaWebhookPrefix}${randomUUID()}`,
+      });
 
-      if (
-        Date.now() - 1000 * 60 * 30 >
-        ProxiaMessageEvent.warningCache[msg.guildId][msg.channelId]
-      ) {
-        msg.channel.send({
-          content:
-            "There is currently no webhook setup for this channel. Run /setupwebhook to setup a webhook for this channel, or run /setupwebhooks for all channels in the guild.",
-        });
-        ProxiaMessageEvent.warningCache[msg.guildId][msg.channelId] = Date.now();
-      }
-      return;
+      await this.bot.db.addWebhook({
+        id: webhook.id,
+        channel_id: webhook.channelId,
+        guild_id: webhook.guildId,
+        name: webhook.name,
+        token: webhook.token as string,
+        created_timestamp: webhook.createdTimestamp,
+      });
+
+      availableWebhooks.push(webhook);
     }
 
-    // Unsure why we're choosing at random. Maybe I did this at first because of ratelimits but even then,
-    // There's no logic in place for rate limits.
     const webhook = availableWebhooks[Math.floor(Math.random() * availableWebhooks.length)];
 
     // Yes, this is a guild member
@@ -284,6 +286,7 @@ export class ProxiaMessageEvent extends ProxiaEvent {
       components: replyComponent && [replyComponent],
       files: attachments.map((a) => a.attBuilder),
       embeds,
+      threadId: msg.hasThread && msg.thread ? msg.thread.id : undefined,
     });
 
     if (mentions.length > 0) {
@@ -299,12 +302,13 @@ export class ProxiaMessageEvent extends ProxiaEvent {
     await this.bot.db.addMessage({
       id: webhookResponse.id,
       guild_id: webhookResponse.guildId || msg.guildId,
+      channel_id: webhookResponse.channelId,
+      thread_id: webhookResponse.hasThread ? webhookResponse.thread?.id : undefined,
       user_unique_id: userGuildObj.unique_id,
       webhook_id: webhook.id,
       content: webhookResponse.content,
       avatar_url: msg.author.displayAvatarURL(),
       createdTimestamp,
-      channel_id: webhookResponse.channelId,
       attachments: webhookResponse.attachments.map((e) => e.id),
       deleted: false,
       edits: [],

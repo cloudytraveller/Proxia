@@ -27,7 +27,7 @@
     "discord-api-types": "^0.37.25",
     "discord.js": "^14.7.1",
     "eslint-plugin-knex": "^0.2.1",
-    "knex": "^2.3.0",
+  "knex": "^2.3.0",
     "mime-types": "^2.1.35",
     "nodemon": "^2.0.20",
     "pino": "^8.8.0",

@@ -52,7 +52,11 @@ export abstract class ProxiaCommand {
    * @param category The command category (matches the directory)
    */
 
-  protected constructor(protected bot: ProxiaClient, public name: string, public category: string) {}
+  protected constructor(
+    protected bot: ProxiaClient,
+    public name: string,
+    public category: string,
+  ) {}
 
   /**
    * Converts a Proxia command to Discord API-compatible JSON
@@ -77,7 +81,10 @@ export abstract class ProxiaCommand {
    * @param args Additional arguments
    */
 
-  public runWithInteraction?(interaction: ChatInputCommandInteraction, ...args: string[]): Promise<void>;
+  public runWithInteraction?(
+    interaction: ChatInputCommandInteraction,
+    ...args: string[]
+  ): Promise<void>;
 
   /**
    * Gets a specific subcommand's response

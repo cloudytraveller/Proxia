@@ -10,7 +10,7 @@ interface ProxiaConfig {
   attachmentsDirectory: string;
 
   // Unused for now
-  webServer: {
+  webServer?: {
     port: number;
   };
 
@@ -19,5 +19,5 @@ interface ProxiaConfig {
   activities: string[] | false;
 
   // Minimum is 5
-  activityInterval: Range<5, 42069>;
+  activityInterval: RangeOf<5, 42_069>;
 }

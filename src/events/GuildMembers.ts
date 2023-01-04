@@ -1,4 +1,4 @@
-import { ProxiaEvent } from "classes/Event.js";
+import { ProxiaEvent } from "../classes/Event.js";
 import { Collection, GuildMember, Role } from "discord.js";
 import { randomBytes } from "node:crypto";
 
@@ -47,8 +47,6 @@ export class ProxiaGuildMembersEvent extends ProxiaEvent {
     }
 
     if (!dbUser.guilds[guild.id]) {
-      let unique_id;
-
       const roles = await this.bot.utils.calculateRoleUniqueIds(member.roles.cache, guild.id);
 
       await this.bot.db.addUserToGuild(dbUser.id, guild.id, {
@@ -97,8 +95,8 @@ export class ProxiaGuildMembersEvent extends ProxiaEvent {
   }
 
   private async _update(oldMember: GuildMember, newMember: GuildMember) {
-    const oldMemberRoles = [...oldMember.roles.cache.values()];
-    const newMemberRoles = [...newMember.roles.cache.values()];
+    const oldMemberRoles = [...oldMember.roles.cache.values()].map((e) => e.id);
+    const newMemberRoles = [...newMember.roles.cache.values()].map((e) => e.id);
 
     const userId = newMember.user.id;
     const guildId = newMember.guild.id;
@@ -126,6 +124,13 @@ export class ProxiaGuildMembersEvent extends ProxiaEvent {
     if (oldMember.nickname !== newMember.nickname)
       guildUpdatable.nickname = newMember.nickname || "";
 
+    if (!this._compareArrays(oldMemberRoles, newMemberRoles)) {
+      guildUpdatable.roles = await this.bot.utils.calculateRoleUniqueIds(
+        newMember.roles.cache,
+        guildId,
+      );
+    }
+
     await this.bot.db.updateUser(newMember.user.id, {
       ...userUpdatable,
     });
@@ -139,5 +144,26 @@ export class ProxiaGuildMembersEvent extends ProxiaEvent {
     await this.bot.db.updateUserGuild(member.id, member.guild.id, {
       existent: false,
     });
+  }
+
+  private _compareArrays(array1: string[], array2: string[]): boolean {
+    array1.sort();
+    array2.sort();
+
+    if (array1.length !== array2.length) {
+      return false;
+    }
+
+    const match1 = array1.every((element) => array2.includes(element));
+    if (!match1) {
+      return false;
+    }
+
+    const match2 = array2.every((element) => array1.includes(element));
+    if (!match2) {
+      return false;
+    }
+
+    return true;
   }
 }

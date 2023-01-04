@@ -14,6 +14,8 @@ interface _Message extends Table {
   guild_id: string;
   // ID of the channel the message was sent in
   channel_id: string;
+  // Thread id if applicable
+  thread_id?: string;
   // Content of the message
   content: string;
   // URL to the users avatar
@@ -58,8 +60,7 @@ interface _Webhook extends Table {
   token: string;
   channel_id: string;
   guild_id: string;
-  channel_name: string;
-  created_timestamp: number;
+  created_timestamp?: number;
 }
 
 type Webhook = Omit<_Webhook, "_tableName">;
@@ -122,7 +123,6 @@ interface _Guild extends Table {
   owner_id: string;
   ignored_channels: string[];
   ghost_hide_mentions: boolean;
-  // make sure to ignore comments!
   disabled: boolean;
 }
 

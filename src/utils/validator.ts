@@ -4,7 +4,12 @@
  * @module validator
  */
 
-import { GatewayIntentsString, BitFieldResolvable, ClientOptions, IntentsBitField } from "discord.js";
+import {
+  GatewayIntentsString,
+  BitFieldResolvable,
+  ClientOptions,
+  IntentsBitField,
+} from "discord.js";
 
 /**
  * Checks to see if an intent is in config.options
@@ -15,7 +20,8 @@ import { GatewayIntentsString, BitFieldResolvable, ClientOptions, IntentsBitFiel
 
 export function checkIntents(options: ClientOptions, intentsToCheck: ResolvableIntentString[]) {
   // Creates a new bitfield out of the client's intents
-  const bitfield: BitFieldResolvable<GatewayIntentsString, number> = options.intents ?? (options.ws as any)?.intents;
+  const bitfield: BitFieldResolvable<GatewayIntentsString, number> =
+    options.intents ?? (options.ws as any)?.intents;
   if (!bitfield) return;
 
   // Creates a new intents constructor for comparison use
