@@ -124,6 +124,7 @@ interface _Guild extends Table {
   ignored_channels: string[];
   ghost_hide_mentions: boolean;
   disabled: boolean;
+  present: boolean;
 }
 
 type Guild = Omit<_Guild, "_tableName">;

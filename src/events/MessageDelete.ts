@@ -1,6 +1,6 @@
 /* eslint-disable unicorn/no-await-expression-member */
 import { ProxiaEvent } from "../classes/Event.js";
-import { proxiaWebhookPrefix } from "utils/constants.js";
+import { proxiaWebhookPrefix } from "../utils/constants.js";
 import { Collection, Message, PartialMessage, Snowflake } from "discord.js";
 
 export class ProxiaMessageDeleteEvent extends ProxiaEvent {
@@ -16,19 +16,16 @@ export class ProxiaMessageDeleteEvent extends ProxiaEvent {
   }
 
   private async _deleteMessage(message: Message | PartialMessage) {
-    const fetchedMessage = await message.fetch();
+    if (!message.webhookId) return;
 
-    if (
-      !fetchedMessage.webhookId ||
-      !(await fetchedMessage.fetchWebhook()).name.startsWith(proxiaWebhookPrefix)
-    )
-      return;
+    const dbWebhook = await this.bot.db.getWebhook(message.webhookId);
 
+    if (!dbWebhook) return;
     try {
       this.bot.db.deleteMessage({
-        id: fetchedMessage.id,
-        channel_id: fetchedMessage.channelId,
-        guild_id: fetchedMessage.guildId as string,
+        id: message.id,
+        channel_id: message.channelId,
+        guild_id: message.guildId as string,
       });
     } catch {
       /* empty */

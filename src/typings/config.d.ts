@@ -6,6 +6,9 @@ interface ProxiaConfig {
   // Whether or not to save attachments to disk
   saveAttachments: boolean;
 
+  // A guild to be used for testing
+  testGuildID: string;
+
   // Directory to save attachments in, if saveAttachments is enabled.
   attachmentsDirectory: string;
 

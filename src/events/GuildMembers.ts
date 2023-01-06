@@ -1,6 +1,7 @@
 import { ProxiaEvent } from "../classes/Event.js";
 import { Collection, GuildMember, Role } from "discord.js";
 import { randomBytes } from "node:crypto";
+import { logger } from "../utils/logger.js";
 
 export class ProxiaGuildMembersEvent extends ProxiaEvent {
   // TODO: Understand how guildMemberAvailable is useful in any way.
@@ -46,6 +47,8 @@ export class ProxiaGuildMembersEvent extends ProxiaEvent {
       });
     }
 
+    logger.debug(dbUser, member.id);
+
     if (!dbUser.guilds[guild.id]) {
       const roles = await this.bot.utils.calculateRoleUniqueIds(member.roles.cache, guild.id);
 
@@ -76,6 +79,8 @@ export class ProxiaGuildMembersEvent extends ProxiaEvent {
           banned: false,
           banned_reason: "",
           existent: true,
+          // We are not adding roles because that will be handled by guildMemberUpdate
+          // roles: rolesToAdd.map((_e,key) => key),
         });
 
         if (dbUserGuild.nickname.length > 0) {

@@ -11,6 +11,7 @@ config.ts
 # Database
 *db.json
 *.db
+*.sqlite
 rethinkdb_data/
 
 # Unused lockfiles

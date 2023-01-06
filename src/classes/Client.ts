@@ -11,12 +11,13 @@ import {
   GatewayIntentBits,
   ActivityType,
   Role as DiscordRole,
+  Partials,
 } from "discord.js";
 import { randomBytes } from "node:crypto";
+import { existsSync } from "node:fs";
+import { mkdir } from "node:fs/promises";
 import path from "node:path";
 import url from "node:url";
-import { mkdir } from "node:fs/promises";
-import { existsSync } from "node:fs";
 
 // Are we being sane or not?
 const IS_PRODUCTION = process.env.NODE_ENV === "production";
@@ -83,9 +84,18 @@ export class ProxiaClient extends Client {
         GatewayIntentBits.GuildMembers,
         GatewayIntentBits.GuildMessages,
         GatewayIntentBits.Guilds,
+        GatewayIntentBits.GuildBans,
         GatewayIntentBits.MessageContent,
         GatewayIntentBits.GuildEmojisAndStickers,
         GatewayIntentBits.GuildWebhooks,
+      ],
+      partials: [
+        Partials.Message,
+        Partials.Reaction,
+        Partials.Channel,
+        Partials.GuildMember,
+        Partials.User,
+        Partials.ThreadMember,
       ],
     });
     this.config = config;
@@ -93,6 +103,7 @@ export class ProxiaClient extends Client {
 
   public init() {
     try {
+      this.db.initSchema();
       const attachmentsDirectory = this.config.attachmentsDirectory;
       this.config.attachmentsDirectory = path.isAbsolute(attachmentsDirectory)
         ? attachmentsDirectory
@@ -115,22 +126,16 @@ export class ProxiaClient extends Client {
         await loadEvents(this, LOGGERS_DIRECTORY, true);
 
         // Registers commands;
-        registerSlashCommands(this);
+        registerSlashCommands(this, IS_PRODUCTION ? undefined : this.config.testGuildID);
 
+        const onShardString = (this.shard && `on shard #${this.shard?.ids[0]}`) || "";
         logger.info(
-          `Logged in as ${this.user?.tag} in ${this.guilds.cache.size} guilds ${
-            this.shard && `on shard #${this.shard?.ids[0]}`
-          }`,
+          `Logged in as ${this.user?.tag} in ${this.guilds.cache.size} ${
+            this.guilds.cache.size > 1 ? "guilds" : "guild"
+          } ${onShardString}`,
         );
-        logger.info(
-          `${this.commands.size} commands loaded ${
-            (this.shard && `on shard #${this.shard?.ids[0]}`) || ""
-          }`,
-        );
-        logger.info(
-          `${this.events.size} events loaded ${this.shard && `on shard #${this.shard?.ids[0]}`}` ||
-            "",
-        );
+        logger.info(`${this.commands.size} commands loaded ${onShardString}`);
+        logger.info(`${this.events.size} events loaded ${onShardString}`);
 
         // Activity changing
         if (this.config.activities && this.config.activities.length > 0) {
@@ -141,12 +146,72 @@ export class ProxiaClient extends Client {
               : 1000 * 60 * 1,
           );
         }
+
+        logger.info("Refreshing guilds " + onShardString);
+        await this.updateGuildsAndMembers();
+        logger.info("Done refreshing guilds " + onShardString);
+
       });
 
       // Logs into the Discord API, I guess
       this.login(this.config.token);
     } catch (error) {
       logger.error(`An error occured while initializing Proxia: ${error}`);
+    }
+  }
+
+  public async updateGuildsAndMembers() {
+    const dbGuilds = await this.db.getGuilds();
+    const dbGuildIds = new Set(dbGuilds.filter((e) => e.present).map((e) => e.id));
+
+    const dbUsers = await this.db.getUsers();
+    for (const guild of this.guilds.cache.values()) {
+      if (!dbGuildIds.has(guild.id)) {
+        this.emit("guildCreate", guild);
+      } else if (dbGuilds.some((e) => e.id === guild.id && !e.present)) {
+        await this.db.updateGuild(guild.id, {
+          present: true,
+        });
+
+        for (const member of guild.members.cache.values()) {
+          // If this member is in our database
+          if (dbUsers.some((user) => user.id === member.id)) {
+            // TODO: Implement some checks, THEN update the database if theres a difference
+            const dbUser = dbUsers.find((user) => user.id === member.id);
+
+            if (dbUser) {
+              if (dbUser.guilds[guild.id]) {
+                await this.db.updateUser(member.id, {
+                  username: member.user.username,
+                  discriminator: member.user.discriminator,
+                  avatar_url: member.user.displayAvatarURL(),
+                });
+                await this.db.updateUserGuild(member.id, guild.id, {
+                  nickname: member.nickname || "",
+                  preferred_avatar_url: member.displayAvatarURL(),
+                  roles: await this.utils.calculateRoleUniqueIds(member.roles.cache, guild.id),
+                });
+              } else {
+                this.emit("guildMemberAdd", member);
+              }
+            }
+          } else {
+            this.emit("guildMemberAdd", member);
+          }
+        }
+
+        for (const user of dbUsers.filter((u) => u.guilds[guild.id])) {
+          if (!guild.members.cache.has(user.id)) {
+            await this.db.updateUserGuild(user.id, guild.id, {
+              existent: false,
+            });
+          } else if (guild.members.cache.has(user.id) && !user.guilds[guild.id].existent) {
+            await this.db.updateUserGuild(user.id, guild.id, {
+              existent: true,
+            });
+          }
+        }
+      }
     }
   }
 

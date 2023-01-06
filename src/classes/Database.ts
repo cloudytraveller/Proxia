@@ -11,6 +11,8 @@
  * - Logic must alway translate database results, such as onces that can be parse as JSON objects.
  */
 
+import { Schema as ParsedDatabaseSchema } from "../ParsedDatabaseSchema.js";
+import { logger } from "../utils/logger.js";
 import {
   AttachmentExistsError,
   GuildExistsError,
@@ -22,9 +24,9 @@ import {
   UserNotExistError,
   UserNotInGuildError,
 } from "./Errors.js";
-import { Schema as ParsedDatabaseSchema } from "../ParsedDatabaseSchema.js";
-import { logger } from "../utils/logger.js";
 import Knex from "knex";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 
 export class DatabaseManager {
   client: Knex.Knex;
@@ -33,8 +35,12 @@ export class DatabaseManager {
     this.client = Knex.knex({
       client: "better-sqlite3",
       connection: {
-        filename: "../../database/db.sqlite",
+        filename: path.join(
+          path.dirname(fileURLToPath(import.meta.url)),
+          "../../database/db.sqlite",
+        ),
       },
+      useNullAsDefault: true,
     });
   }
 
@@ -53,20 +59,20 @@ export class DatabaseManager {
     // @ts-expect-error It'll be fine
     const tables: Table[] = ParsedDatabaseSchema;
 
-    for (const table in tables) {
-      if (!(await this.client.schema.hasTable(table))) {
-        await this.client.schema.createTable(table, (k) => {
+    for (const table of tables) {
+      if (!(await this.client.schema.hasTable(table.name))) {
+        await this.client.schema.createTable(table.name, (k) => {
           // Add the necessary columns for each table
-          for (const column of tables[table].columns) {
+          for (const column of table.columns) {
             const e = k[column.type](column.name);
             if (column.unique) e.unique();
           }
         });
       } else {
         // Check if the table has the necessary columns and add them if they don't exist
-        for (const column of tables[table].columns) {
-          if (!(await this.client.schema.hasColumn(table, column.name))) {
-            await this.client.schema.table(table, (k) => {
+        for (const column of table.columns) {
+          if (!(await this.client.schema.hasColumn(table.name, column.name))) {
+            await this.client.schema.table(table.name, (k) => {
               const e = k[column.type](column.name);
               if (column.unique) e.unique();
             });
@@ -81,8 +87,8 @@ export class DatabaseManager {
 
       // Iterate through the existing columns and delete any that aren't in the schema
       for (const column of existingColumns) {
-        if (!tables[table].columns.some((c) => c.name === column.name)) {
-          await this.client.schema.table(table, (k) => {
+        if (!table.columns.some((c) => c.name === column.name)) {
+          await this.client.schema.table(table.name, (k) => {
             k.dropColumn(column.name);
           });
         }
@@ -146,7 +152,6 @@ export class DatabaseManager {
   }
 
   public async getRoles(guild_id: string): Promise<Role[]> {
-    if (!(await this.guildExists(guild_id))) throw new GuildNotExistError();
     const roles = await this.client<Role>("roles").select().where({ guild_id });
 
     return roles || [];
@@ -185,15 +190,18 @@ export class DatabaseManager {
     return result;
   }
 
+  public async getGuilds(): Promise<Guild[]> {
+    const result = parseFromDatabaseJson(await this.client<Guild>("guilds").select());
+    return result;
+  }
   public async addGuild(guild: Guild): Promise<Guild> {
     if (await this.guildExists(guild.id)) {
       throw new GuildExistsError();
     }
     await this.client<Guild>("guilds").insert(parseToDatabaseJson(guild));
 
-    return parseFromDatabaseJson(
-      this.client<Guild>("guilds").select().where({ id: guild.id }).first(),
-    ) as unknown as Guild;
+    const result = await this.client<Guild>("guilds").select().where({ id: guild.id }).first();
+    return parseFromDatabaseJson(result) as unknown as Guild;
   }
 
   public async updateGuild(guild_id: string, guild: Partial<Guild>): Promise<void> {
@@ -291,15 +299,14 @@ export class DatabaseManager {
     channel_id: string,
     thread_id?: string,
   ): Promise<Message | undefined> {
-    const result = await this.client<Message>("messages")
-      .select()
-      .where({
-        id: message_id,
-        guild_id,
-        channel_id,
-        thread_id: thread_id == null ? undefined : thread_id,
-      })
-      .first();
+    const where: Record<any, any> = {
+      id: message_id,
+      guild_id,
+      channel_id,
+    };
+
+    if (thread_id) where.thread_id = thread_id;
+    const result = await this.client<Message>("messages").select().where(where).first();
 
     return parseFromDatabaseJson(result);
   }
@@ -310,15 +317,16 @@ export class DatabaseManager {
     channel_id: string,
     thread_id?: string,
   ): Promise<boolean> {
-    const result = await this.client<Message>("messages")
-      .select("id")
-      .where({
-        id: message_id,
-        guild_id,
-        channel_id,
-        thread_id: thread_id == null ? undefined : thread_id,
-      })
-      .first();
+    const where: Record<any, any> = {
+      id: message_id,
+      guild_id,
+      channel_id,
+    };
+
+    if (thread_id) {
+      where.thread_id = thread_id;
+    }
+    const result = await this.client<Message>("messages").select("id").where(where).first();
 
     return !!result;
   }
@@ -334,18 +342,17 @@ export class DatabaseManager {
     guild_id: string;
     thread_id?: string;
   }): Promise<void> {
-    // eh fuck.
-    this.client<Message>("messages")
-      .where({
-        id,
-        channel_id,
-        guild_id,
-        thread_id: thread_id ?? undefined,
-      })
-      .first()
-      .update({
-        deleted: true,
-      });
+    const where: Record<any, any> = {
+      id,
+      channel_id,
+      guild_id,
+    };
+
+    if (thread_id) where.thread_id = thread_id;
+
+    this.client<Message>("messages").where(where).first().update({
+      deleted: true,
+    });
   }
 
   public async addMessage(message: Message): Promise<Message> {
@@ -385,19 +392,20 @@ export class DatabaseManager {
     message_id: string;
     guild_id: string;
     channel_id: string;
-    thread_id: string;
+    thread_id?: string;
     new_content: string;
     edit_epoch: number;
   }): Promise<void> {
-    if (!(await this.messageExists(message_id, guild_id, channel_id, thread_id)))
+    if (!(await this.messageExists(message_id, guild_id, channel_id)))
       throw new MessageNotExistError();
 
-    const where = {
+    const where: Record<any, any> = {
       id: message_id,
       guild_id,
       channel_id,
-      thread_id: thread_id == null ? undefined : thread_id,
     };
+
+    if (thread_id) where.thread_id = thread_id;
 
     const dbResult = parseFromDatabaseJson(
       await this.client<Message>("messages").select("edits").where(where).first(),
@@ -434,6 +442,12 @@ export class DatabaseManager {
     return user;
   }
 
+  public async getUsers(): Promise<User[]> {
+    const users = parseFromDatabaseJson(await this.client<User>("users").select());
+
+    return users;
+  }
+
   public async createUser(
     user: Omit2<User, "oauth2" | "recoverykey_timestamps" | "seen_recoverykey" | "guilds">,
   ): Promise<User> {
@@ -448,14 +462,9 @@ export class DatabaseManager {
       recoverykey_timestamps: [],
     };
 
-    const newUser: Record<any, any> = {};
     Object.assign(baseUser, user);
 
-    for (const object in baseUser) {
-      newUser[object] = parseToDatabaseJson((baseUser as unknown as Record<any, any>)[object]);
-    }
-
-    await this.client<User>("users").insert(baseUser);
+    await this.client<User>("users").insert(parseToDatabaseJson(baseUser));
     // return thing
     return parseFromDatabaseJson(
       await this.client<User>("users").select().where("id", baseUser.id).first(),
@@ -649,6 +658,11 @@ export class DatabaseManager {
       .first() as unknown as Webhook;
   }
 
+  public async getWebhook(id: string): Promise<Webhook | undefined> {
+    const result = await this.client<Webhook>("webhooks").select().where({ id }).first();
+
+    return result;
+  }
   public async deleteWebhook(id: string): Promise<void> {
     await this.client<Webhook>("webhooks").delete().where({ id }).first();
   }
@@ -656,7 +670,7 @@ export class DatabaseManager {
 }
 
 function parseToDatabaseJson(obj: any): any {
-  delete obj._tableName;
+  if (obj?._tableName) delete obj._tableName;
   if (Object.prototype.toString.call(obj) === "[object Array]") {
     return JSON.stringify(obj);
   } else if (typeof obj === "object") {
@@ -673,6 +687,9 @@ function parseToDatabaseJson(obj: any): any {
 function parseFromDatabaseJson<T>(obj: T): T {
   if (typeof obj === "string") {
     try {
+      if (Number.parseInt(obj)) {
+        return obj;
+      }
       obj = JSON.parse(obj);
     } catch {
       return obj;

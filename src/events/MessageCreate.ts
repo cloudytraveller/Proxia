@@ -1,6 +1,6 @@
 import { ProxiaEvent } from "../classes/Event.js";
-import { proxiaWebhookPrefix } from "utils/constants.js";
-import { getUserId } from "utils/users.js";
+import { proxiaWebhookPrefix } from "../utils/constants.js";
+import { getUserId } from "../utils/users.js";
 import axios from "axios";
 import { ButtonStyle } from "discord-api-types/v9";
 import {
@@ -21,6 +21,7 @@ import { randomBytes, randomUUID } from "node:crypto";
 import fs from "node:fs";
 import fsp from "node:fs/promises";
 import path from "node:path";
+import { logger } from "../utils/logger.js";
 
 type ChannelWarningTimeCache = {
   [guildId: string]: {
@@ -35,6 +36,7 @@ export class ProxiaMessageEvent extends ProxiaEvent {
   requiredIntents?: ResolvableIntentString[] = ["GuildMessages"];
 
   public async run(_event: ProxiaEventEmitter, msg: Message) {
+    logger.info("MessageCreate");
     if (
       !msg ||
       !msg.content ||
@@ -58,7 +60,7 @@ export class ProxiaMessageEvent extends ProxiaEvent {
     const guildDb = await this.bot.db.getGuild(guild.id);
 
     if (!guildDb) {
-      console.error(`Guild ${guild.id} does not exist in database?`);
+      logger.error(`Guild ${guild.id} does not exist in database?`);
       return;
     }
 
@@ -128,7 +130,7 @@ export class ProxiaMessageEvent extends ProxiaEvent {
       });
     }
 
-    const usernameString = `${member.nickname ?? msg.author.username} (${user.guilds})`;
+    const usernameString = `${member.nickname ?? msg.author.username} (${userGuildObj.unique_id})`;
 
     let replyComponent: Unpacked<MessagePayloadOption["components"]>;
 
@@ -297,6 +299,8 @@ export class ProxiaMessageEvent extends ProxiaEvent {
         content: msg.content,
       });
     }
+
+    await msg.delete();
 
     const createdTimestamp = webhookResponse.createdTimestamp || Date.now();
     await this.bot.db.addMessage({

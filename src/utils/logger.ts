@@ -8,6 +8,7 @@ const pinoOptions: pino.LoggerOptions = {
       colorize: true,
     },
   },
+  level: process.env.NODE_ENV === "development" ? "debug" : "info",
 };
 
 export const logger = pino(pinoOptions);

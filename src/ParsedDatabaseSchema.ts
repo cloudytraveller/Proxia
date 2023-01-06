@@ -71,6 +71,7 @@ export const Schema = [
       { name: "ignored_channels", type: "text" },
       { name: "ghost_hide_mentions", type: "boolean" },
       { name: "disabled", type: "boolean" },
+      { name: "present", type: "boolean" },
     ],
   },
 ];

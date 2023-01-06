@@ -1,6 +1,6 @@
 import type { Role as DiscordRole, User as DiscordUser } from "discord.js";
 import { ProxiaEvent } from "../classes/Event.js";
-import { stenRemove, stenEncode, stenDecode } from "utils/sten.js";
+import { stenRemove, stenEncode, stenDecode } from "../utils/sten.js";
 import { AuditLogEvent } from "discord-api-types/v9";
 import { randomBytes } from "node:crypto";
 
@@ -32,9 +32,20 @@ export class ProxiaRoleEvent extends ProxiaEvent {
 
   public async addRole(role: DiscordRole) {
     // TODO: Check if bot has role management permissions??
-
+    if (this.nobueno(role)) return;
     if (await this.bot.db.roleExists(role.id, role.guild.id)) {
-      throw new Error("Role exists");
+      // throw new Error("Role exists");
+      // Update the role in the database anyway
+      const dbRole = await this.bot.db.getRole(role.id, role.guild.id);
+      if (dbRole && dbRole.name !== stenRemove(role.name)) {
+        await this.bot.db.updateRole(role.id, role.guild.id, {
+          existent: true,
+          name: stenRemove(role.name),
+        });
+
+        await role.setName(stenRemove(role.name).slice(0, 92) + stenEncode(dbRole.unique_id));
+      }
+      return;
     }
 
     let id: string | undefined;
@@ -67,15 +78,16 @@ export class ProxiaRoleEvent extends ProxiaEvent {
     await this.bot.db.deleteRole(role.id, role.guild.id);
   }
 
+  public nobueno(role: DiscordRole) {
+    return role.tags?.botId ||
+      role.id === role.guild.roles.everyone.id ||
+      role.tags?.premiumSubscriberRole ||
+      role.tags?.integrationId ||
+      role.managed;
+  }
+
   private async _updateRole(oldRole: DiscordRole, newRole: DiscordRole) {
-    // TODO: Port old code
-    if (
-      newRole.tags?.botId ||
-      newRole.id === newRole.guild.roles.everyone.id ||
-      newRole.tags?.premiumSubscriberRole ||
-      newRole.tags?.integrationId
-    )
-      return;
+    if (this.nobueno(oldRole) || this.nobueno(newRole)) return;
 
     if (oldRole.name === newRole.name || (!oldRole && newRole)) return;
 
@@ -115,12 +127,17 @@ export class ProxiaRoleEvent extends ProxiaEvent {
 
       let executor: DiscordUser | undefined;
       for (const entry of audit.entries.values()) {
-        if ((entry.target as DiscordRole).id === newRole.id) {
+        if (
+          entry.executor &&
+          (entry.target as DiscordRole).id === newRole.id &&
+          entry.executor.id !== (this.bot.user as unknown as DiscordUser).id
+        ) {
           executor = entry.executor as unknown as DiscordUser;
           // revert the name change
           newRole.edit({
             name: oldRole.name,
           });
+          break;
         }
       }
 

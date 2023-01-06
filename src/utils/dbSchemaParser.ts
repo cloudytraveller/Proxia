@@ -14,6 +14,7 @@ import { AST_NODE_TYPES } from "@typescript-eslint/typescript-estree";
 import fsp from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { logger } from "./logger.js";
 
 type TableColumn = {
   name: string;
@@ -116,9 +117,9 @@ async function main() {
   );
   await fsp.writeFile(filepath, formatObject(tables));
 
-  console.log(`Wrote ${tables.length} tables to ${filepath}`);
+  logger.debug(`Wrote ${tables.length} tables to ${filepath}`);
 }
 
 main().catch((error) => {
-  console.error(error);
+  logger.error(error);
 });

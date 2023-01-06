@@ -27,7 +27,7 @@ import path from "node:path";
 export async function loadCommands(bot: ProxiaClient, directory: PathLike): Promise<any> {
   const files = fs.readdirSync(directory, { withFileTypes: true, encoding: "utf8" });
 
-  files.forEach(async (file) => {
+  for (const file of files) {
     if (file.isDirectory()) {
       // If there's a subfolder, re-run it inside it
       await loadCommands(bot, path.join(directory.toString(), file.name));
@@ -58,7 +58,7 @@ export async function loadCommands(bot: ProxiaClient, directory: PathLike): Prom
     // Loads the command
     const command = new commandToLoad(bot, fileName, category);
     bot.commands.set(fileName, command);
-  });
+  }
 }
 
 /**

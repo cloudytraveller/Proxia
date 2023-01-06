@@ -1,21 +1,21 @@
 import type { MessageReaction, User } from "discord.js";
 import { ProxiaEvent } from "../classes/Event.js";
-import { getUserId } from "utils/users.js";
+import { getUserId } from "../utils/users.js";
 
 export class ProxiaMessageReactionAddEvent extends ProxiaEvent {
-  events: ProxiaEventEmitter[] = ["messageReactionAdd"];
+  events: ProxiaEventEmitter[] = ["messageReactionAdd", ];
   requiredIntents?: ResolvableIntentString[] = ["GuildMessageReactions", "GuildMessages"];
-  deleteEmotes = ["heavy_multiplication_x", "x", "wastebasket"];
+  deleteEmotes = ["heavy_multiplication_x", "x", "wastebasket", "❌", "✖️", "🗑️"];
 
   public async run(_event: ProxiaEventEmitter, reaction: MessageReaction, user: User) {
     if (user.bot) return;
 
-    await reaction.message.fetch();
+    const fetchedReaction = await reaction.fetch();
     if (
-      !reaction.message.guildId ||
-      !reaction.message.guild ||
-      !reaction.message ||
-      !reaction.message.author?.bot
+      !fetchedReaction.message.guildId ||
+      !fetchedReaction.message.guild ||
+      !fetchedReaction.message ||
+      !fetchedReaction.message.author?.bot
     )
       return;
 
@@ -25,23 +25,23 @@ export class ProxiaMessageReactionAddEvent extends ProxiaEvent {
     //   return;
     // }
 
-    if (this.deleteEmotes.includes(reaction.emoji.name || "")) {
-      const messageUniqueId = getUserId(reaction.message.author.username);
+    if (this.deleteEmotes.includes(fetchedReaction.emoji.name || "")) {
+      const messageUniqueId = getUserId(fetchedReaction.message.author.username);
       const dbUser = await this.bot.db.getUser(messageUniqueId || "");
 
       if (!dbUser) {
         return;
       }
       if (dbUser.id === user.id) {
-        await reaction.message.delete();
+        await fetchedReaction.message.delete();
         await this.bot.db.deleteMessage({
-          id: reaction.message.id,
-          channel_id: reaction.message.channelId,
-          guild_id: reaction.message.guild?.id,
-          thread_id: reaction.message.hasThread ? reaction.message.thread?.id : undefined,
+          id: fetchedReaction.message.id,
+          channel_id: fetchedReaction.message.channelId,
+          guild_id: fetchedReaction.message.guild?.id,
+          thread_id: fetchedReaction.message.hasThread ? fetchedReaction.message.thread?.id : undefined,
         });
       } else {
-        reaction.remove();
+        fetchedReaction.remove();
       }
     }
   }
