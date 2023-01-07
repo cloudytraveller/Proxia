@@ -79,11 +79,13 @@ export class ProxiaRoleEvent extends ProxiaEvent {
   }
 
   public nobueno(role: DiscordRole) {
-    return role.tags?.botId ||
+    return (
+      role.tags?.botId ||
       role.id === role.guild.roles.everyone.id ||
       role.tags?.premiumSubscriberRole ||
       role.tags?.integrationId ||
-      role.managed;
+      role.managed
+    );
   }
 
   private async _updateRole(oldRole: DiscordRole, newRole: DiscordRole) {

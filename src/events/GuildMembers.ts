@@ -1,7 +1,7 @@
 import { ProxiaEvent } from "../classes/Event.js";
+import { logger } from "../utils/logger.js";
 import { Collection, GuildMember, Role } from "discord.js";
 import { randomBytes } from "node:crypto";
-import { logger } from "../utils/logger.js";
 
 export class ProxiaGuildMembersEvent extends ProxiaEvent {
   // TODO: Understand how guildMemberAvailable is useful in any way.
@@ -43,6 +43,7 @@ export class ProxiaGuildMembersEvent extends ProxiaEvent {
         username: discordUser.username,
         discriminator: discordUser.discriminator,
         avatar_url: discordUser.avatarURL() || member.displayAvatarURL(),
+        locale: "en-GB",
         recoverykey,
       });
     }

@@ -1,5 +1,5 @@
 import { ProxiaEvent } from "../classes/Event.js";
-import { Colors, EmbedBuilder, Guild } from "discord.js";
+import { EmbedBuilder, Guild } from "discord.js";
 
 export class GuildAddEvent extends ProxiaEvent {
   events: ProxiaEventEmitter[] = ["guildCreate", "guildDelete"];
@@ -48,7 +48,7 @@ export class GuildAddEvent extends ProxiaEvent {
               name: "Proxia",
               url: this.bot.user?.displayAvatarURL(),
             })
-            .setColor(Colors.Red),
+            .setColor(this.bot.config.colours.error),
         ],
       });
       await guild.leave();
@@ -65,7 +65,7 @@ export class GuildAddEvent extends ProxiaEvent {
               name: "Proxia",
               url: this.bot.user?.displayAvatarURL(),
             })
-            .setColor("#9460fc"),
+            .setColor(this.bot.config.colours.primary),
         ],
       });
 
@@ -81,6 +81,7 @@ export class GuildAddEvent extends ProxiaEvent {
             ignored_channels: [],
             owner_id: owner.id,
             present: true,
+            locale: "en-GB",
           })
         : this.bot.db.updateGuild(guild.id, {
             present: true,

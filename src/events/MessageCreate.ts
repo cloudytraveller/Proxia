@@ -1,5 +1,6 @@
 import { ProxiaEvent } from "../classes/Event.js";
 import { proxiaWebhookPrefix } from "../utils/constants.js";
+import { logger } from "../utils/logger.js";
 import { getUserId } from "../utils/users.js";
 import axios from "axios";
 import { ButtonStyle } from "discord-api-types/v9";
@@ -21,7 +22,6 @@ import { randomBytes, randomUUID } from "node:crypto";
 import fs from "node:fs";
 import fsp from "node:fs/promises";
 import path from "node:path";
-import { logger } from "../utils/logger.js";
 
 type ChannelWarningTimeCache = {
   [guildId: string]: {
@@ -116,6 +116,7 @@ export class ProxiaMessageEvent extends ProxiaEvent {
         discriminator: member.user.discriminator,
         recoverykey: randomBytes(32).toString("hex"),
         avatar_url: member.user.avatar,
+        locale: "en-GB",
       });
     }
 

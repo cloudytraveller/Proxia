@@ -9,12 +9,12 @@ import type {
   Literal,
   Identifier,
 } from "@typescript-eslint/types/dist/generated/ast-spec.js";
+import { logger } from "./logger.js";
 import parser from "@typescript-eslint/parser";
 import { AST_NODE_TYPES } from "@typescript-eslint/typescript-estree";
 import fsp from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { logger } from "./logger.js";
 
 type TableColumn = {
   name: string;

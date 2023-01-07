@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/naming-convention */
 import type { TextChannel } from "discord.js";
-import { logger } from "../utils/logger.js";
 import { ProxiaEvent } from "../classes/Event.js";
+import { logger } from "../utils/logger.js";
 
 export class ProxiaRawEvent extends ProxiaEvent {
   // @ts-expect-error raw data

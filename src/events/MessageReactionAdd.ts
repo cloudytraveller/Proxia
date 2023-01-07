@@ -3,7 +3,7 @@ import { ProxiaEvent } from "../classes/Event.js";
 import { getUserId } from "../utils/users.js";
 
 export class ProxiaMessageReactionAddEvent extends ProxiaEvent {
-  events: ProxiaEventEmitter[] = ["messageReactionAdd", ];
+  events: ProxiaEventEmitter[] = ["messageReactionAdd"];
   requiredIntents?: ResolvableIntentString[] = ["GuildMessageReactions", "GuildMessages"];
   deleteEmotes = ["heavy_multiplication_x", "x", "wastebasket", "❌", "✖️", "🗑️"];
 
@@ -38,7 +38,9 @@ export class ProxiaMessageReactionAddEvent extends ProxiaEvent {
           id: fetchedReaction.message.id,
           channel_id: fetchedReaction.message.channelId,
           guild_id: fetchedReaction.message.guild?.id,
-          thread_id: fetchedReaction.message.hasThread ? fetchedReaction.message.thread?.id : undefined,
+          thread_id: fetchedReaction.message.hasThread
+            ? fetchedReaction.message.thread?.id
+            : undefined,
         });
       } else {
         fetchedReaction.remove();
