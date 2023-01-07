@@ -248,9 +248,7 @@ export class DatabaseManager {
 
     await this.client<Guild>("guilds")
       .where("id", guild_id)
-      .update("ignored_channels", JSON.stringify(ignoredChannels))
-      .first();
-
+      .update("ignored_channels", JSON.stringify(ignoredChannels));
     return [...ignoredChannels];
   }
 
@@ -350,7 +348,7 @@ export class DatabaseManager {
 
     if (thread_id) where.thread_id = thread_id;
 
-    this.client<Message>("messages").where(where).first().update({
+    this.client<Message>("messages").where(where).update({
       deleted: true,
     });
   }
@@ -457,6 +455,7 @@ export class DatabaseManager {
       discriminator: "",
       avatar_url: "",
       guilds: {},
+      locale: "en-GB",
       recoverykey: "",
       seen_recoverykey: false,
       recoverykey_timestamps: [],
@@ -546,11 +545,7 @@ export class DatabaseManager {
 
     Object.assign(user, userUpdatable);
 
-    await this.client<User>("users")
-      .update(parseToDatabaseJson(userUpdatable))
-      .where({ id })
-      .first();
-
+    await this.client<User>("users").update(parseToDatabaseJson(userUpdatable)).where({ id });
     return parseFromDatabaseJson(this.client<User>("users").select().where({ id }).first());
   }
 
