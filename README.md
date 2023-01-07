@@ -17,9 +17,32 @@ Proxia is a Discord bot that proxies your messages through Discord's webhook, wh
 
 Think of it similar to [PluralKit](https://pluralkit.me/)
 
-The main goal of this this is to anonymize yourself and your server members in a Discord server. Proxia can't be turned off
+The main goal of this is to anonymize yourself and your server members in a Discord server. Proxia can't be turned off per user, only per guild.
 
 Althrough Proxia supports multiple guilds, it's highly recommended you stick to having the bot in one guild.
+
+## Official Instance
+
+There is no official instance of Proxia. This is a self-hosted bot.
+
+## Notes
+
+- The locale system is not fully functional, as I do not have time to pay attention to that right now.
+
+## Data Privacy
+
+The following types of data will be stored **on-demand** when some **features are ran** in order for the bot to work correctly.
+
+<!-- - **User ID(s)**: A Discord ID unique to your account (**user configs, etc.**)
+- **Server ID(s)**: A Discord ID unique to your server (**server configs, etc.**)
+- **Message ID(s)**: A message ID corresponding to a message (**reminders, etc.**)
+- **Command Response(s)**: Text responses in slash-commands (**for mute reasons, etc**) -->
+**User Info**: ID, username, discriminator, avatar, underlying user information per guild (such as nickname, preferred avatar, etc)
+**Server Info**: Basic guild information, roles, users, channels and messages.
+**Attachments**: Attachments may be stored on the server the bot is running on, at owners discretion
+
+To view any data that corresponds with your Discord account, run the `/gdpr` command. (Unless the server owner has willfully removed the command)
+This does not include raw attachment data, only data that coresponds to an attachment on disk.
 
 # Installation
 
