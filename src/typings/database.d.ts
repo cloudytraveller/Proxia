@@ -83,6 +83,7 @@ interface _User extends Table {
   username: string;
   discriminator: string;
   avatar_url?: string | null;
+  locale: string;
   guilds: {
     [guild_id: string]: {
       nickname: string;
@@ -121,6 +122,7 @@ interface _Guild extends Table {
   _tableName: "guilds";
   id: string;
   owner_id: string;
+  locale: string;
   ignored_channels: string[];
   ghost_hide_mentions: boolean;
   disabled: boolean;

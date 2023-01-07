@@ -20,3 +20,6 @@ type Omit2<T, K extends keyof T> = Pick<T, Exclude<keyof T, K>>;
 
 // Type alias
 type Optional<T> = Partial<T>;
+
+// Valid locale codes. This list will need to be updated manually.
+type ProxiaLocaleCode = "en-GB" | string;

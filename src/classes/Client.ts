@@ -18,6 +18,7 @@ import { existsSync } from "node:fs";
 import { mkdir } from "node:fs/promises";
 import path from "node:path";
 import url from "node:url";
+import { ProxiaLocaleSystem } from "./LocaleSystem.js";
 
 // Are we being sane or not?
 const IS_PRODUCTION = process.env.NODE_ENV === "production";
@@ -29,7 +30,7 @@ const pathDirname = path.dirname(url.fileURLToPath(import.meta.url));
 const COMMANDS_DIRECTORY = path.join(pathDirname, "../commands");
 const EVENTS_DIRECTORY = path.join(pathDirname, "../events");
 const LOGGERS_DIRECTORY = path.join(pathDirname, "../loggers");
-// const LOCALES_DIRECTORY = path.join(pathDirname, "../locales");
+const LOCALES_DIRECTORY = path.join(pathDirname, "../locales");
 
 export class ProxiaClient extends Client {
   readonly config: ProxiaConfig;
@@ -44,6 +45,9 @@ export class ProxiaClient extends Client {
 
   // A collection of loggers
   readonly loggers: Collection<string, ProxiaLogger> = new Collection();
+
+  // Proxia's locale system
+  readonly localeSystem: ProxiaLocaleSystem;
 
   lastActivityIndex = -1;
 
@@ -99,6 +103,9 @@ export class ProxiaClient extends Client {
       ],
     });
     this.config = config;
+
+    // Creates a new Locale System engine
+    this.localeSystem = new ProxiaLocaleSystem(LOCALES_DIRECTORY, this.config.defaultLocale);
   }
 
   public init() {
