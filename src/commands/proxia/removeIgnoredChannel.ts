@@ -1,13 +1,13 @@
 import type { ChatInputCommandInteraction } from "discord.js";
-import { ProxiaCommand } from "../classes/Command.js";
+import { ProxiaCommand } from "../../classes/Command.js";
 import {
   APIApplicationCommandOption,
   ApplicationCommandOptionType,
   ChannelType,
 } from "discord-api-types/v10";
 
-export class IgnoreChannelCommand extends ProxiaCommand {
-  description = "Adds a channel to ignore";
+export class RemoveIgnoredChannelCommand extends ProxiaCommand {
+  description = "Removes an ignored channel.";
 
   options: APIApplicationCommandOption[] = [
     {
@@ -26,15 +26,18 @@ export class IgnoreChannelCommand extends ProxiaCommand {
       !interaction.member ||
       !interaction.memberPermissions
     ) {
-      await interaction.reply({
+      await interaction.followUp({
         content: "This command must be ran inside a guild of which you have administrator in.",
         ephemeral: true,
       });
       return;
     }
 
-    if (interaction.memberPermissions.has("Administrator")) {
-      await interaction.reply({
+    if (
+      !interaction.memberPermissions.has("Administrator") ||
+      interaction.guild.ownerId !== interaction.user.id
+    ) {
+      await interaction.followUp({
         content: "Only administrators can run this command",
         ephemeral: true,
       });
@@ -44,20 +47,36 @@ export class IgnoreChannelCommand extends ProxiaCommand {
     const channel = interaction.options.getChannel("channel");
 
     if (!channel) {
-      await interaction.reply({
+      await interaction.followUp({
         content: ":warning: A channel was not provided",
         ephemeral: true,
       });
       return;
     }
 
-    try {
-      await this.bot.db.addIgnoredChannels(interaction.guildId, channel.id);
-    } catch (error) {
-      await interaction.reply({
-        content: ("An error occured trying to add the ignored channel:\n" + error) as string,
+    const ignoredChannels = await this.bot.db.getIgnoredChannels(interaction.guildId);
+
+    if (!ignoredChannels.includes(channel.id)) {
+      await interaction.followUp({
+        content: "Channel is not in the list of ignored channels.",
         ephemeral: true,
       });
+      return;
     }
+
+    try {
+      await this.bot.db.removedIgnoredChannels(channel.id);
+    } catch (error) {
+      await interaction.followUp({
+        content: ("An error occured trying to remove the ignored channel:\n" + error) as string,
+        ephemeral: true,
+      });
+      return;
+    }
+
+    await interaction.followUp({
+      content: `The channel (<#${channel.id}>) has been added to the ignore list`,
+      ephemeral: true,
+    });
   }
 }
